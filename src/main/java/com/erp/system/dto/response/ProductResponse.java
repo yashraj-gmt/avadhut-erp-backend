@@ -29,6 +29,7 @@ public class ProductResponse {
     private BigDecimal rentPrice;
     private Integer    currentStock;
     private Integer    minimumStock;
+    private BigDecimal weight;
     private String     hsnCode;
     private BigDecimal gstPercent;
     private String     description;

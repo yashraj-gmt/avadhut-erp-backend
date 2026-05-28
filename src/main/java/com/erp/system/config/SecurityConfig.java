@@ -78,7 +78,7 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(SecurityConstants.PUBLIC_URLS).permitAll()
-
+                        .requestMatchers("/uploads/**").permitAll()
                         // SUPER_ADMIN only
                         .requestMatchers("/api/super-admin/**")
                         .hasAuthority(SecurityConstants.ROLE_SUPER_ADMIN)

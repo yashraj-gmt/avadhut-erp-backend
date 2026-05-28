@@ -28,6 +28,8 @@ public class UpdateProductRequest {
 
     private Long categoryId;
 
+    private BigDecimal weight;
+
     @Size(max = 20, message = "Unit must not exceed 20 characters")
     private String unit;
 

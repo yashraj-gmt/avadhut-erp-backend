@@ -12,7 +12,7 @@ import lombok.*;
 public class ProductImageResponse {
 
     private Long    id;
-    private String  imageUrl;       // full accessible URL
+    private String  imageUrl;
     private String  originalFileName;
     private Long    fileSize;
     private Boolean isPrimary;

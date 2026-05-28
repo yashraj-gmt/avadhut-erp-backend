@@ -15,15 +15,22 @@ public interface CategoryRepository extends JpaRepository<ProductCategory, Long>
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
 
     @Query("""
-        SELECT c FROM ProductCategory c
-        WHERE c.deleted = false
-          AND (:search   IS NULL OR LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%')))
-          AND (:isActive IS NULL OR c.isActive = :isActive)
-        """)
+SELECT c FROM ProductCategory c
+WHERE c.deleted = false
+AND (
+    COALESCE(:search, '') = ''
+    OR LOWER(c.name) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+    OR LOWER(COALESCE(c.description, ''))
+       LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+)
+AND (:isActive IS NULL OR c.isActive = :isActive)
+ORDER BY c.createdAt DESC
+""")
     Page<ProductCategory> findAllWithFilters(
-            @Param("search")   String  search,
+            @Param("search") String search,
             @Param("isActive") Boolean isActive,
-            Pageable pageable);
+            Pageable pageable
+    );
 
     @Query("""
         SELECT COUNT(p) FROM Product p

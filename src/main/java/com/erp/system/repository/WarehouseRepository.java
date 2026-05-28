@@ -15,13 +15,17 @@ public interface WarehouseRepository extends JpaRepository<Warehouse, Long> {
     boolean existsByNameIgnoreCaseAndIdNot(String name, Long id);
     boolean existsByCodeIgnoreCaseAndIdNot(String code, Long id);
 
+
     @Query("""
-        SELECT w FROM Warehouse w
-        WHERE w.deleted = false
-          AND (:search   IS NULL OR LOWER(w.name) LIKE LOWER(CONCAT('%', :search, '%'))
-                                 OR LOWER(w.code) LIKE LOWER(CONCAT('%', :search, '%')))
-          AND (:isActive IS NULL OR w.isActive = :isActive)
-        """)
+    SELECT w FROM Warehouse w
+    WHERE w.deleted = false
+      AND (
+            :search IS NULL
+            OR LOWER(w.name) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+            OR LOWER(w.code) LIKE LOWER(CONCAT('%', CAST(:search AS string), '%'))
+          )
+      AND (:isActive IS NULL OR w.isActive = :isActive)
+    """)
     Page<Warehouse> findAllWithFilters(
             @Param("search")   String  search,
             @Param("isActive") Boolean isActive,

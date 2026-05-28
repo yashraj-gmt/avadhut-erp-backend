@@ -61,11 +61,13 @@ public abstract class ProductMapper {
     @AfterMapping
     protected void enrichSummaryResponse(Product p,
                                          @MappingTarget ProductSummaryResponse r) {
+
         String url = imageRepository
                 .findByProductIdAndIsPrimaryTrue(p.getId())
                 .map(img -> fileUploadService.toPublicUrl(img.getImageUrl()))
                 .orElse(null);
         r.setPrimaryImageUrl(url);
+        r.setMinimumStock(p.getMinimumStock());
     }
 
     // ── Image response ────────────────────────────────────────────────────

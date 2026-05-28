@@ -7,22 +7,11 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-/**
- * Sent as the "data" part in a multipart/form-data request.
- * Example (Postman / curl):
- *
- *   POST /api/inventory/products
- *   Content-Type: multipart/form-data
- *
- *   Part "data"    → application/json  (this DTO)
- *   Part "images"  → image files (multiple)
- *   Part "qrCode"  → single QR image file
- */
 @Getter
 @Setter
 public class CreateProductRequest {
 
-    // ── Core product fields ───────────────────────────────────────────────
+    // ── Core product fields
 
     @NotBlank(message = "Product name is required")
     @Size(max = 200, message = "Name must not exceed 200 characters")
@@ -38,7 +27,7 @@ public class CreateProductRequest {
     private String unit;
 
     @DecimalMin(value = "0.0", inclusive = true, message = "Purchase price cannot be negative")
-    @Digits(integer = 13, fraction = 2, message = "Invalid purchase price format")
+    @Digits(integer = 13, fraction =     2, message = "Invalid purchase price format")
     private BigDecimal purchasePrice;
 
     @DecimalMin(value = "0.0", inclusive = true, message = "Selling price cannot be negative")
@@ -64,27 +53,23 @@ public class CreateProductRequest {
 
     private Boolean isActive = true;
 
-    // ── Draft / Publish ───────────────────────────────────────────────────
+    @DecimalMin(value = "0.0", inclusive = true)
+    @Digits(integer = 10, fraction = 3)
+    private BigDecimal weight;
 
-    /**
-     * DRAFT (default) or PUBLISHED.
-     * Leaving null defaults to DRAFT.
-     */
+    // Draft / Publish
     private ProductStatus status = ProductStatus.DRAFT;
 
-    // ── Inventory / Warehouse fields ──────────────────────────────────────
+    // Inventory / Warehouse fields
 
-    /** Optional: link to a warehouse and create an inventory record */
     private Long warehouseId;
 
     @Min(value = 0, message = "Stock quantity cannot be negative")
     private Integer stockQuantity = 0;
 
-    /** Low-stock alert threshold. Alert % = (stockQuantity / stockAlert) * 100 */
     @Min(value = 0, message = "Stock alert cannot be negative")
     private Integer stockAlert;
 
-    /** Max units this warehouse can hold for this product */
     @Min(value = 0, message = "Warehouse capacity cannot be negative")
     private Integer warehouseCapacity;
 }

@@ -22,8 +22,12 @@ public class FileUploadConfig implements WebMvcConfigurer {
         String absoluteUploadPath =
                 Paths.get(uploadDir).toAbsolutePath().normalize().toUri().toString();
 
+        if (!absoluteUploadPath.endsWith("/")) {
+            absoluteUploadPath = absoluteUploadPath + "/";
+        }
+
         registry.addResourceHandler("/uploads/**")
                 .addResourceLocations(absoluteUploadPath)
-                .setCachePeriod(3600);   // 1-hour browser cache
+                .setCachePeriod(3600);
     }
 }
