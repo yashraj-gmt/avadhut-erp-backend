@@ -33,6 +33,7 @@ public class ProductResponse {
     private String     hsnCode;
     private BigDecimal gstPercent;
     private String     description;
+    private String     productBy;
     private Boolean    isActive;
 
     /** DRAFT or PUBLISHED */

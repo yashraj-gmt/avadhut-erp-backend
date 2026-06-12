@@ -24,6 +24,7 @@ public class ProductSummaryResponse {
     private Integer       currentStock;
     private ProductStatus status;
     private Boolean       isActive;
+    private String        productBy;
 
     private Integer minimumStock;
     /** Primary image URL (null if no images uploaded) */

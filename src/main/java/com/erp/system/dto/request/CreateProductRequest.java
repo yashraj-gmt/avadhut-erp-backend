@@ -53,6 +53,9 @@ public class CreateProductRequest {
 
     private Boolean isActive = true;
 
+    @Size(max = 200, message = "Product by must not exceed 200 characters")
+    private String productBy;
+
     @DecimalMin(value = "0.0", inclusive = true)
     @Digits(integer = 10, fraction = 3)
     private BigDecimal weight;

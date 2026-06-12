@@ -60,6 +60,9 @@ public class UpdateProductRequest {
 
     private Boolean isActive;
 
+    @Size(max = 200, message = "Product by must not exceed 200 characters")
+    private String productBy;
+
     /** Change product status (DRAFT ↔ PUBLISHED) */
     private ProductStatus status;
 

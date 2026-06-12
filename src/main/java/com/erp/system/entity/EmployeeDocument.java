@@ -33,7 +33,6 @@ public class EmployeeDocument extends BaseEntity {
     @Column(name = "file_name", length = 255)
     private String fileName;
 
-    /** S3 key or local filesystem path */
     @Column(name = "file_path", nullable = false, length = 500)
     private String filePath;
 

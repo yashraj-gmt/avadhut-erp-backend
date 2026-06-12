@@ -342,6 +342,7 @@ public class ProductServiceImpl implements ProductService {
         p.setHsnCode(req.getHsnCode());
         p.setGstPercent(req.getGstPercent());
         p.setDescription(req.getDescription());
+        p.setProductBy(req.getProductBy());
         p.setIsActive(req.getIsActive() != null ? req.getIsActive() : true);
         p.setStatus(req.getStatus() != null ? req.getStatus() : ProductStatus.DRAFT);
     }
@@ -357,6 +358,7 @@ public class ProductServiceImpl implements ProductService {
         if (req.getHsnCode()       != null) p.setHsnCode(req.getHsnCode());
         if (req.getGstPercent()    != null) p.setGstPercent(req.getGstPercent());
         if (req.getDescription()   != null) p.setDescription(req.getDescription());
+        if (req.getProductBy()     != null) p.setProductBy(req.getProductBy());
         if (req.getIsActive()      != null) p.setIsActive(req.getIsActive());
         if (req.getStatus()        != null) p.setStatus(req.getStatus());
     }

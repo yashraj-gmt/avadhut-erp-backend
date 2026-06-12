@@ -20,7 +20,7 @@ public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
 
-    // ── Token generation ──────────────────────────────────────────────────
+    // Token generation
 
     public String generateAccessToken(CustomUserDetails userDetails) {
         Date now    = new Date();
@@ -31,10 +31,10 @@ public class JwtTokenProvider {
                 .collect(Collectors.toList());
 
         return Jwts.builder()
-                .subject(userDetails.getMobile())           // mobile as JWT subject
+                .subject(userDetails.getMobile())
                 .claim("userId", userDetails.getId())
                 .claim("name",   userDetails.getName())
-                .claim("mobile", userDetails.getMobile())   // explicit claim for easy extraction
+                .claim("mobile", userDetails.getMobile())
                 .claim("roles",  roles)
                 .issuedAt(now)
                 .expiration(expiry)

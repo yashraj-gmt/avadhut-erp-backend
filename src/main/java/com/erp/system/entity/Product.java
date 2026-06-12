@@ -77,6 +77,9 @@ public class Product extends BaseEntity {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "product_by", length = 200)
+    private String productBy;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
