@@ -42,7 +42,7 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // ── Token parsing ─────────────────────────────────────────────────────
+    // Token parsing
 
     /** Returns the mobile number stored as the JWT subject. */
     public String getMobileFromToken(String token) {
@@ -57,7 +57,7 @@ public class JwtTokenProvider {
         return parseClaims(token).getExpiration();
     }
 
-    // ── Validation ────────────────────────────────────────────────────────
+    // ── Validation
 
     public boolean validateToken(String token) {
         try {

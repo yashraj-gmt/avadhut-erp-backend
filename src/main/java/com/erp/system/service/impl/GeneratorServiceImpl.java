@@ -5,8 +5,6 @@ import com.erp.system.dto.request.UpdateGeneratorRequest;
 import com.erp.system.dto.response.GeneratorResponse;
 import com.erp.system.dto.response.PagedResponse;
 import com.erp.system.entity.Generator;
-import com.erp.system.enums.GeneratorFuelType;
-import com.erp.system.enums.GeneratorStatus;
 import com.erp.system.exception.AppException;
 import com.erp.system.exception.ResourceNotFoundException;
 import com.erp.system.mapper.GeneratorMapper;
@@ -49,37 +47,13 @@ public class GeneratorServiceImpl implements GeneratorService {
             );
         }
 
-        // Validate unique serial number if provided
-        if (request.getSerialNumber() != null && !request.getSerialNumber().isBlank()
-                && generatorRepository.existsBySerialNumberIgnoreCase(request.getSerialNumber())) {
-            throw new AppException(
-                    "Generator with serial number '" + request.getSerialNumber() + "' already exists.",
-                    HttpStatus.CONFLICT
-            );
-        }
-
         Generator generator = new Generator();
         generator.setName(request.getName().trim());
-        generator.setGeneratorCode(request.getGeneratorCode().trim());
-        generator.setBrand(request.getBrand());
-        generator.setModel(request.getModel());
-        generator.setSerialNumber(request.getSerialNumber());
-        generator.setFuelType(request.getFuelType());
-        generator.setRatedPowerKva(request.getRatedPowerKva());
-        generator.setRatedPowerKw(request.getRatedPowerKw());
-        generator.setVoltage(request.getVoltage());
-        generator.setFrequency(request.getFrequency());
-        generator.setPurchaseDate(request.getPurchaseDate());
+        generator.setGeneratorCode(request.getGeneratorCode().trim().toUpperCase());
         generator.setPurchasePrice(request.getPurchasePrice());
-        generator.setRentPricePerDay(request.getRentPricePerDay());
-        generator.setCurrentStatus(
-                request.getCurrentStatus() != null ? request.getCurrentStatus() : GeneratorStatus.AVAILABLE
-        );
-        generator.setCondition(request.getCondition());
-        generator.setLocation(request.getLocation());
-        generator.setHoursRun(request.getHoursRun() != null ? request.getHoursRun() : 0);
-        generator.setLastServiceDate(request.getLastServiceDate());
-        generator.setNextServiceDue(request.getNextServiceDue());
+        generator.setStockQuantity(request.getStockQuantity() != null ? request.getStockQuantity() : 0);
+        generator.setProductBy(request.getProductBy());
+        generator.setImageUrl(request.getImageUrl());
         generator.setDescription(request.getDescription());
         generator.setIsActive(request.getIsActive() != null ? request.getIsActive() : true);
 
@@ -94,13 +68,8 @@ public class GeneratorServiceImpl implements GeneratorService {
 
     @Override
     @Transactional(readOnly = true)
-    public PagedResponse<GeneratorResponse> getAll(String search, GeneratorStatus currentStatus,
-                                                    GeneratorFuelType fuelType, Boolean isActive,
-                                                    Pageable pageable) {
-        Page<Generator> page = generatorRepository.findAllWithFilters(
-                search, currentStatus, fuelType, isActive, pageable
-        );
-
+    public PagedResponse<GeneratorResponse> getAll(String search, Boolean isActive, Pageable pageable) {
+        Page<Generator> page = generatorRepository.findAllWithFilters(search, isActive, pageable);
         return PagedResponse.from(page.map(generatorMapper::toResponse));
     }
 
@@ -132,7 +101,7 @@ public class GeneratorServiceImpl implements GeneratorService {
 
         // Code uniqueness check
         if (request.getGeneratorCode() != null) {
-            String newCode = request.getGeneratorCode().trim();
+            String newCode = request.getGeneratorCode().trim().toUpperCase();
             if (generatorRepository.existsByGeneratorCodeIgnoreCaseAndIdNot(newCode, id)) {
                 throw new AppException(
                         "Generator code '" + newCode + "' is already taken.",
@@ -142,34 +111,10 @@ public class GeneratorServiceImpl implements GeneratorService {
             generator.setGeneratorCode(newCode);
         }
 
-        // Serial number uniqueness check
-        if (request.getSerialNumber() != null) {
-            if (!request.getSerialNumber().isBlank()
-                    && generatorRepository.existsBySerialNumberIgnoreCaseAndIdNot(request.getSerialNumber(), id)) {
-                throw new AppException(
-                        "Serial number '" + request.getSerialNumber() + "' is already taken.",
-                        HttpStatus.CONFLICT
-                );
-            }
-            generator.setSerialNumber(request.getSerialNumber());
-        }
-
-        if (request.getBrand()          != null) generator.setBrand(request.getBrand());
-        if (request.getModel()          != null) generator.setModel(request.getModel());
-        if (request.getFuelType()       != null) generator.setFuelType(request.getFuelType());
-        if (request.getRatedPowerKva()  != null) generator.setRatedPowerKva(request.getRatedPowerKva());
-        if (request.getRatedPowerKw()   != null) generator.setRatedPowerKw(request.getRatedPowerKw());
-        if (request.getVoltage()        != null) generator.setVoltage(request.getVoltage());
-        if (request.getFrequency()      != null) generator.setFrequency(request.getFrequency());
-        if (request.getPurchaseDate()   != null) generator.setPurchaseDate(request.getPurchaseDate());
         if (request.getPurchasePrice()  != null) generator.setPurchasePrice(request.getPurchasePrice());
-        if (request.getRentPricePerDay()!= null) generator.setRentPricePerDay(request.getRentPricePerDay());
-        if (request.getCurrentStatus()  != null) generator.setCurrentStatus(request.getCurrentStatus());
-        if (request.getCondition()      != null) generator.setCondition(request.getCondition());
-        if (request.getLocation()       != null) generator.setLocation(request.getLocation());
-        if (request.getHoursRun()       != null) generator.setHoursRun(request.getHoursRun());
-        if (request.getLastServiceDate()!= null) generator.setLastServiceDate(request.getLastServiceDate());
-        if (request.getNextServiceDue() != null) generator.setNextServiceDue(request.getNextServiceDue());
+        if (request.getStockQuantity()  != null) generator.setStockQuantity(request.getStockQuantity());
+        if (request.getProductBy()      != null) generator.setProductBy(request.getProductBy());
+        if (request.getImageUrl()       != null) generator.setImageUrl(request.getImageUrl());
         if (request.getDescription()    != null) generator.setDescription(request.getDescription());
         if (request.getIsActive()       != null) generator.setIsActive(request.getIsActive());
 

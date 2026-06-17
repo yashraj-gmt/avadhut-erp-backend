@@ -5,8 +5,6 @@ import com.erp.system.dto.request.UpdateGeneratorRequest;
 import com.erp.system.dto.response.ApiResponse;
 import com.erp.system.dto.response.GeneratorResponse;
 import com.erp.system.dto.response.PagedResponse;
-import com.erp.system.enums.GeneratorFuelType;
-import com.erp.system.enums.GeneratorStatus;
 import com.erp.system.service.GeneratorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,22 +35,19 @@ public class GeneratorController {
     // ── GET /api/admin/generators ────────────────────────────────────────
     @GetMapping
     public ResponseEntity<ApiResponse<PagedResponse<GeneratorResponse>>> getAll(
-            @RequestParam(required = false)                String              search,
-            @RequestParam(required = false)                GeneratorStatus     currentStatus,
-            @RequestParam(required = false)                GeneratorFuelType   fuelType,
-            @RequestParam(required = false)                Boolean             isActive,
-            @RequestParam(defaultValue = "0")              int                 page,
-            @RequestParam(defaultValue = "20")             int                 size,
-            @RequestParam(defaultValue = "createdAt")      String              sortBy,
-            @RequestParam(defaultValue = "desc")           String              sortDir) {
+            @RequestParam(required = false)           String  search,
+            @RequestParam(required = false)           Boolean isActive,
+            @RequestParam(defaultValue = "0")         int     page,
+            @RequestParam(defaultValue = "20")        int     size,
+            @RequestParam(defaultValue = "createdAt") String  sortBy,
+            @RequestParam(defaultValue = "desc")      String  sortDir) {
 
         Sort sort = sortDir.equalsIgnoreCase("asc")
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
 
         PagedResponse<GeneratorResponse> data =
-                generatorService.getAll(search, currentStatus, fuelType, isActive,
-                        PageRequest.of(page, size, sort));
+                generatorService.getAll(search, isActive, PageRequest.of(page, size, sort));
 
         return ResponseEntity.ok(ApiResponse.success("Generators retrieved successfully.", data));
     }

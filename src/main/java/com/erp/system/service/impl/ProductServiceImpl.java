@@ -6,12 +6,13 @@ import com.erp.system.dto.request.UpdateProductRequest;
 import com.erp.system.dto.response.PagedResponse;
 import com.erp.system.dto.response.ProductResponse;
 import com.erp.system.dto.response.ProductSummaryResponse;
-import com.erp.system.entity.*;
-import com.erp.system.enums.ProductStatus;
+import com.erp.system.entity.Product;
+import com.erp.system.entity.ProductImage;
 import com.erp.system.exception.AppException;
 import com.erp.system.exception.ResourceNotFoundException;
 import com.erp.system.mapper.ProductMapper;
-import com.erp.system.repository.*;
+import com.erp.system.repository.ProductImageRepository;
+import com.erp.system.repository.ProductRepository;
 import com.erp.system.service.FileUploadService;
 import com.erp.system.service.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -33,10 +34,7 @@ import java.util.stream.IntStream;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository      productRepository;
-    private final CategoryRepository     categoryRepository;
     private final ProductImageRepository imageRepository;
-    private final InventoryRepository    inventoryRepository;
-    private final WarehouseRepository    warehouseRepository;
     private final FileUploadService      fileUploadService;
     private final ProductMapper          productMapper;
 
@@ -44,9 +42,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public ProductResponse create(CreateProductRequest request,
-                                  List<MultipartFile> images,
-                                  MultipartFile qrCode) {
+    public ProductResponse create(CreateProductRequest request, List<MultipartFile> images) {
 
         if (productRepository.existsByProductCodeIgnoreCase(request.getProductCode())) {
             throw new AppException(
@@ -58,17 +54,6 @@ public class ProductServiceImpl implements ProductService {
         Product product = new Product();
         applyProductFields(product, request);
 
-        if (request.getCategoryId() != null) {
-            ProductCategory category = categoryRepository.findById(request.getCategoryId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Category not found with id: " + request.getCategoryId()));
-            product.setCategory(category);
-        }
-
-        if (qrCode != null && !qrCode.isEmpty()) {
-            product.setQrCodeImage(fileUploadService.uploadQrCode(qrCode));
-        }
-
         Product saved = productRepository.save(product);
 
         if (images != null && !images.isEmpty()) {
@@ -77,18 +62,7 @@ public class ProductServiceImpl implements ProductService {
             imageRepository.saveAll(productImages);
         }
 
-        if (request.getWarehouseId() != null) {
-            Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Warehouse not found with id: " + request.getWarehouseId()));
-            createInventoryRecord(saved, warehouse, request.getStockQuantity(),
-                    request.getStockAlert(), request.getWarehouseCapacity());
-            saved.setCurrentStock(request.getStockQuantity() != null ? request.getStockQuantity() : 0);
-            productRepository.save(saved);
-        }
-
-        log.info("Product created: id={}, code={}, status={}",
-                saved.getId(), saved.getProductCode(), saved.getStatus());
+        log.info("Product created: id={}, code={}", saved.getId(), saved.getProductCode());
         return productMapper.toDetailResponse(saved);
     }
 
@@ -98,28 +72,14 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public PagedResponse<ProductSummaryResponse> getAll(
             String search,
-            Long categoryId,
-            ProductStatus status,
             Boolean isActive,
-            Long warehouseId,
             Pageable pageable) {
 
-        search = (search == null || search.isBlank())
-                ? null
-                : search.trim();
+        search = (search == null || search.isBlank()) ? null : search.trim();
 
-        Page<Product> page = productRepository.findAllWithFilters(
-                search,
-                categoryId,
-                status,
-                isActive,
-                warehouseId,
-                pageable
-        );
+        Page<Product> page = productRepository.findAllWithFilters(search, isActive, pageable);
 
-        return PagedResponse.from(
-                page.map(productMapper::toSummaryResponse)
-        );
+        return PagedResponse.from(page.map(productMapper::toSummaryResponse));
     }
 
     @Override
@@ -132,8 +92,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public ProductResponse update(Long id, UpdateProductRequest request,
-                                  List<MultipartFile> newImages, MultipartFile newQrCode) {
+    public ProductResponse update(Long id, UpdateProductRequest request, List<MultipartFile> newImages) {
 
         Product product = findOrThrow(id);
 
@@ -148,20 +107,13 @@ public class ProductServiceImpl implements ProductService {
 
         applyProductPatch(product, request);
 
-        if (request.getCategoryId() != null) {
-            ProductCategory category = categoryRepository.findById(request.getCategoryId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Category not found with id: " + request.getCategoryId()));
-            product.setCategory(category);
-        }
-
         // Soft-delete removed images
         if (request.getRemoveImageIds() != null && !request.getRemoveImageIds().isEmpty()) {
             List<ProductImage> toRemove =
                     imageRepository.findByIdsAndProductId(request.getRemoveImageIds(), id);
             toRemove.forEach(img -> {
                 fileUploadService.deleteFile(img.getImageUrl());
-                img.setDeleted(true);           // ← soft-delete image
+                img.setDeleted(true);
             });
             imageRepository.saveAll(toRemove);
         }
@@ -184,57 +136,13 @@ public class ProductServiceImpl implements ProductService {
             imageRepository.saveAll(added);
         }
 
-        if (newQrCode != null && !newQrCode.isEmpty()) {
-            if (product.getQrCodeImage() != null) fileUploadService.deleteFile(product.getQrCodeImage());
-            product.setQrCodeImage(fileUploadService.uploadQrCode(newQrCode));
-        }
-
-        if (request.getWarehouseId() != null) {
-            Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                    .orElseThrow(() -> new ResourceNotFoundException(
-                            "Warehouse not found with id: " + request.getWarehouseId()));
-
-            Inventory inv = inventoryRepository
-                    .findByProductIdAndWarehouseId(id, request.getWarehouseId())
-                    .orElseGet(() -> {
-                        Inventory newInv = new Inventory();
-                        newInv.setProduct(product);
-                        newInv.setWarehouse(warehouse);
-                        return newInv;
-                    });
-
-            if (request.getStockQuantity()     != null) inv.setStockQuantity(request.getStockQuantity());
-            if (request.getStockAlert()        != null) inv.setStockAlert(request.getStockAlert());
-            if (request.getWarehouseCapacity() != null) inv.setWarehouseCapacity(request.getWarehouseCapacity());
-            inventoryRepository.save(inv);
-
-            product.setCurrentStock(inv.getStockQuantity());
+        // Update stock
+        if (request.getStockQuantity() != null) {
+            product.setCurrentStock(request.getStockQuantity());
         }
 
         Product saved = productRepository.save(product);
-        log.info("Product updated: id={}, status={}", saved.getId(), saved.getStatus());
-        return productMapper.toDetailResponse(saved);
-    }
-
-    // ── Workflow ──────────────────────────────────────────────────────────
-
-    @Override
-    @Transactional
-    public ProductResponse publish(Long id) {
-        Product product = findOrThrow(id);
-        product.setStatus(ProductStatus.PUBLISHED);
-        Product saved = productRepository.save(product);
-        log.info("Product published: id={}", id);
-        return productMapper.toDetailResponse(saved);
-    }
-
-    @Override
-    @Transactional
-    public ProductResponse revertToDraft(Long id) {
-        Product product = findOrThrow(id);
-        product.setStatus(ProductStatus.DRAFT);
-        Product saved = productRepository.save(product);
-        log.info("Product reverted to draft: id={}", id);
+        log.info("Product updated: id={}", saved.getId());
         return productMapper.toDetailResponse(saved);
     }
 
@@ -253,13 +161,7 @@ public class ProductServiceImpl implements ProductService {
         });
         imageRepository.saveAll(images);
 
-        // Delete QR file from disk (no soft-delete needed for QR path, it's just a column)
-        if (product.getQrCodeImage() != null) {
-            fileUploadService.deleteFile(product.getQrCodeImage());
-            product.setQrCodeImage(null);
-        }
-
-        product.setDeleted(true);           // ← soft-delete product
+        product.setDeleted(true);
         productRepository.save(product);
         log.info("Product soft-deleted: id={}", id);
     }
@@ -276,7 +178,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         fileUploadService.deleteFile(image.getImageUrl());
-        image.setDeleted(true);             // ← soft-delete image
+        image.setDeleted(true);
         imageRepository.save(image);
 
         // Promote next image to primary if this was the primary
@@ -318,48 +220,22 @@ public class ProductServiceImpl implements ProductService {
         return result;
     }
 
-    private void createInventoryRecord(Product product, Warehouse warehouse,
-                                       Integer stockQty, Integer stockAlert,
-                                       Integer warehouseCapacity) {
-        Inventory inv = new Inventory();
-        inv.setProduct(product);
-        inv.setWarehouse(warehouse);
-        inv.setStockQuantity(stockQty != null ? stockQty : 0);
-        inv.setStockAlert(stockAlert);
-        inv.setWarehouseCapacity(warehouseCapacity);
-        inventoryRepository.save(inv);
-    }
-
     private void applyProductFields(Product p, CreateProductRequest req) {
         p.setName(req.getName().trim());
         p.setProductCode(req.getProductCode().trim().toUpperCase());
-        p.setUnit(req.getUnit());
         p.setPurchasePrice(req.getPurchasePrice());
-        p.setSellingPrice(req.getSellingPrice());
-        p.setRentPrice(req.getRentPrice());
-        p.setMinimumStock(req.getMinimumStock() != null ? req.getMinimumStock() : 0);
-        p.setCurrentStock(0);
-        p.setHsnCode(req.getHsnCode());
-        p.setGstPercent(req.getGstPercent());
-        p.setDescription(req.getDescription());
+        p.setCurrentStock(req.getStockQuantity() != null ? req.getStockQuantity() : 0);
         p.setProductBy(req.getProductBy());
+        p.setDescription(req.getDescription());
         p.setIsActive(req.getIsActive() != null ? req.getIsActive() : true);
-        p.setStatus(req.getStatus() != null ? req.getStatus() : ProductStatus.DRAFT);
     }
 
     private void applyProductPatch(Product p, UpdateProductRequest req) {
         if (req.getName()          != null) p.setName(req.getName().trim());
         if (req.getProductCode()   != null) p.setProductCode(req.getProductCode().trim().toUpperCase());
-        if (req.getUnit()          != null) p.setUnit(req.getUnit());
         if (req.getPurchasePrice() != null) p.setPurchasePrice(req.getPurchasePrice());
-        if (req.getSellingPrice()  != null) p.setSellingPrice(req.getSellingPrice());
-        if (req.getRentPrice()     != null) p.setRentPrice(req.getRentPrice());
-        if (req.getMinimumStock()  != null) p.setMinimumStock(req.getMinimumStock());
-        if (req.getHsnCode()       != null) p.setHsnCode(req.getHsnCode());
-        if (req.getGstPercent()    != null) p.setGstPercent(req.getGstPercent());
-        if (req.getDescription()   != null) p.setDescription(req.getDescription());
         if (req.getProductBy()     != null) p.setProductBy(req.getProductBy());
+        if (req.getDescription()   != null) p.setDescription(req.getDescription());
         if (req.getIsActive()      != null) p.setIsActive(req.getIsActive());
-        if (req.getStatus()        != null) p.setStatus(req.getStatus());
     }
 }

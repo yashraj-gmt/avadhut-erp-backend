@@ -6,10 +6,8 @@ import com.erp.system.dto.response.ApiResponse;
 import com.erp.system.dto.response.PagedResponse;
 import com.erp.system.dto.response.ProductResponse;
 import com.erp.system.dto.response.ProductSummaryResponse;
-import com.erp.system.enums.ProductStatus;
 import com.erp.system.service.ProductService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -30,14 +28,12 @@ import java.util.List;
  *   Part "data"   — JSON (CreateProductRequest / UpdateProductRequest)
  *                   Content-Type: application/json
  *   Part "images" — zero or more image files
- *   Part "qrCode" — single QR code image (optional)
  *
  * Postman example:
  *   POST /api/inventory/products
  *   Body → form-data
  *     key: data    | type: Text (application/json)  | value: { "name": "...", ... }
  *     key: images  | type: File (multipart)          | value: <image files>
- *     key: qrCode  | type: File (multipart)          | value: <qr image>
  */
 @Slf4j
 @RestController
@@ -52,14 +48,13 @@ public class ProductController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<ProductResponse>> create(
             @RequestPart("data")                           String              dataJson,
-            @RequestPart(value = "images", required = false) List<MultipartFile> images,
-            @RequestPart(value = "qrCode", required = false) MultipartFile       qrCode)
+            @RequestPart(value = "images", required = false) List<MultipartFile> images)
             throws Exception {
 
         CreateProductRequest request = objectMapper.readValue(dataJson, CreateProductRequest.class);
         validateRequest(request);
 
-        ProductResponse data = productService.create(request, images, qrCode);
+        ProductResponse data = productService.create(request, images);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Product created successfully.", data));
@@ -68,23 +63,19 @@ public class ProductController {
     // ── GET /api/inventory/products ──────────────────────────────────────
     @GetMapping
     public ResponseEntity<ApiResponse<PagedResponse<ProductSummaryResponse>>> getAll(
-            @RequestParam(required = false)            String        search,
-            @RequestParam(required = false)            Long          categoryId,
-            @RequestParam(required = false)            ProductStatus status,
-            @RequestParam(required = false)            Boolean       isActive,
-            @RequestParam(required = false)            Long          warehouseId,
-            @RequestParam(defaultValue = "0")          int           page,
-            @RequestParam(defaultValue = "20")         int           size,
-            @RequestParam(defaultValue = "createdAt")  String        sortBy,
-            @RequestParam(defaultValue = "desc")       String        sortDir) {
+            @RequestParam(required = false)           String  search,
+            @RequestParam(required = false)           Boolean isActive,
+            @RequestParam(defaultValue = "0")         int     page,
+            @RequestParam(defaultValue = "20")        int     size,
+            @RequestParam(defaultValue = "createdAt") String  sortBy,
+            @RequestParam(defaultValue = "desc")      String  sortDir) {
 
         Sort sort = sortDir.equalsIgnoreCase("asc")
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
 
         PagedResponse<ProductSummaryResponse> data =
-                productService.getAll(search, categoryId, status, isActive, warehouseId,
-                        PageRequest.of(page, size, sort));
+                productService.getAll(search, isActive, PageRequest.of(page, size, sort));
 
         return ResponseEntity.ok(ApiResponse.success("Products retrieved successfully.", data));
     }
@@ -102,30 +93,13 @@ public class ProductController {
     public ResponseEntity<ApiResponse<ProductResponse>> update(
             @PathVariable Long id,
             @RequestPart("data")                           String              dataJson,
-            @RequestPart(value = "images", required = false) List<MultipartFile> newImages,
-            @RequestPart(value = "qrCode", required = false) MultipartFile       newQrCode)
+            @RequestPart(value = "images", required = false) List<MultipartFile> newImages)
             throws Exception {
 
         UpdateProductRequest request = objectMapper.readValue(dataJson, UpdateProductRequest.class);
 
-        ProductResponse data = productService.update(id, request, newImages, newQrCode);
+        ProductResponse data = productService.update(id, request, newImages);
         return ResponseEntity.ok(ApiResponse.success("Product updated successfully.", data));
-    }
-
-    // ── PATCH /api/inventory/products/{id}/publish
-    @PatchMapping("/{id}/publish")
-    public ResponseEntity<ApiResponse<ProductResponse>> publish(@PathVariable Long id) {
-        return ResponseEntity.ok(
-                ApiResponse.success("Product published successfully.", productService.publish(id))
-        );
-    }
-
-    // ── PATCH /api/inventory/products/{id}/draft
-    @PatchMapping("/{id}/draft")
-    public ResponseEntity<ApiResponse<ProductResponse>> revertToDraft(@PathVariable Long id) {
-        return ResponseEntity.ok(
-                ApiResponse.success("Product reverted to draft.", productService.revertToDraft(id))
-        );
     }
 
     // ── DELETE /api/inventory/products/{id} ──────────────────────────────

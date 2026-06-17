@@ -1,7 +1,6 @@
 package com.erp.system.repository;
 
 import com.erp.system.entity.Product;
-import com.erp.system.enums.ProductStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
@@ -17,10 +16,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     );
 
     @Query("""
-        SELECT DISTINCT p
+        SELECT p
         FROM Product p
-        LEFT JOIN p.inventories i
-
         WHERE p.deleted = false
 
         AND (
@@ -42,40 +39,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         )
 
         AND (
-            :categoryId IS NULL
-            OR p.category.id = :categoryId
-        )
-
-        AND (
-            :status IS NULL
-            OR p.status = :status
-        )
-
-        AND (
             :isActive IS NULL
             OR p.isActive = :isActive
-        )
-
-        AND (
-            :warehouseId IS NULL
-            OR i.warehouse.id = :warehouseId
         )
         """)
     Page<Product> findAllWithFilters(
             @Param("search")
             String search,
 
-            @Param("categoryId")
-            Long categoryId,
-
-            @Param("status")
-            ProductStatus status,
-
             @Param("isActive")
             Boolean isActive,
-
-            @Param("warehouseId")
-            Long warehouseId,
 
             Pageable pageable
     );
