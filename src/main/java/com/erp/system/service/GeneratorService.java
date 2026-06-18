@@ -5,16 +5,19 @@ import com.erp.system.dto.request.UpdateGeneratorRequest;
 import com.erp.system.dto.response.GeneratorResponse;
 import com.erp.system.dto.response.PagedResponse;
 import org.springframework.data.domain.Pageable;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface GeneratorService {
 
-    GeneratorResponse create(CreateGeneratorRequest request);
+    /** Create a generator; optionally attach a single image file. */
+    GeneratorResponse create(CreateGeneratorRequest request, MultipartFile image);
 
     PagedResponse<GeneratorResponse> getAll(String search, Boolean isActive, Pageable pageable);
 
     GeneratorResponse getById(Long id);
 
-    GeneratorResponse update(Long id, UpdateGeneratorRequest request);
+    /** Update a generator; optionally replace its image with a new file. */
+    GeneratorResponse update(Long id, UpdateGeneratorRequest request, MultipartFile image);
 
     void delete(Long id);
 }

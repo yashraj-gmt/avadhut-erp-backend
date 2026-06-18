@@ -6,27 +6,48 @@ import com.erp.system.dto.response.ApiResponse;
 import com.erp.system.dto.response.GeneratorResponse;
 import com.erp.system.dto.response.PagedResponse;
 import com.erp.system.service.GeneratorService;
-import jakarta.validation.Valid;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * Generator REST controller.
+ *
+ * Create / update use multipart/form-data:
+ *   Part "data"  — JSON (CreateGeneratorRequest / UpdateGeneratorRequest)
+ *   Part "image" — optional single image file
+ *
+ * Postman example:
+ *   POST /api/admin/generators
+ *   Body → form-data
+ *     key: data  | type: Text (application/json) | value: { "name": "...", ... }
+ *     key: image | type: File                    | value: <image file>
+ */
+@Slf4j
 @RestController
 @RequestMapping("/api/admin/generators")
 @RequiredArgsConstructor
 public class GeneratorController {
 
     private final GeneratorService generatorService;
+    private final ObjectMapper     objectMapper;
 
     // ── POST /api/admin/generators ───────────────────────────────────────
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<GeneratorResponse>> create(
-            @Valid @RequestBody CreateGeneratorRequest request) {
+            @RequestPart("data")                           String         dataJson,
+            @RequestPart(value = "image", required = false) MultipartFile  image)
+            throws Exception {
 
-        GeneratorResponse data = generatorService.create(request);
+        CreateGeneratorRequest request = objectMapper.readValue(dataJson, CreateGeneratorRequest.class);
+        GeneratorResponse data = generatorService.create(request, image);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Generator created successfully.", data));
@@ -61,12 +82,15 @@ public class GeneratorController {
     }
 
     // ── PATCH /api/admin/generators/{id} ─────────────────────────────────
-    @PatchMapping("/{id}")
+    @PatchMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<GeneratorResponse>> update(
             @PathVariable Long id,
-            @Valid @RequestBody UpdateGeneratorRequest request) {
+            @RequestPart("data")                           String         dataJson,
+            @RequestPart(value = "image", required = false) MultipartFile  image)
+            throws Exception {
 
-        GeneratorResponse data = generatorService.update(id, request);
+        UpdateGeneratorRequest request = objectMapper.readValue(dataJson, UpdateGeneratorRequest.class);
+        GeneratorResponse data = generatorService.update(id, request, image);
         return ResponseEntity.ok(ApiResponse.success("Generator updated successfully.", data));
     }
 

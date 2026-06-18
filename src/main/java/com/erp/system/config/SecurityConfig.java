@@ -39,7 +39,7 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint entryPoint;
     private final JwtAccessDeniedHandler    accessDeniedHandler;
 
-    // ── Beans ─────────────────────────────────────────────────────────────
+    // ── Beans
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -120,13 +120,13 @@ public class SecurityConfig {
         return source;
     }
 
-    @Bean
-    public CommandLineRunner run(PasswordEncoder encoder) {
-        return args -> {
-            System.out.println("SuperAdmin : " + encoder.encode("SuperAdmin@123"));
-            System.out.println("Admin      : " + encoder.encode("Admin@123"));
-            System.out.println("Staff      : " + encoder.encode("Staff@123"));
-        };
-    }
+//    @Bean
+//    public CommandLineRunner run(PasswordEncoder encoder) {
+//        return args -> {
+//            System.out.println("SuperAdmin : " + encoder.encode("SuperAdmin@123"));
+//            System.out.println("Admin      : " + encoder.encode("Admin@123"));
+//            System.out.println("Staff      : " + encoder.encode("Staff@123"));
+//        };
+//    }
 
 }
