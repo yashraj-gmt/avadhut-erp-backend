@@ -31,3 +31,15 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Production secrets — NEVER commit these ###
+.env.production.local
+*.env.production.local
+
+### Uploaded files — stored in Spaces, not in git ###
+uploads/
+
+### Application-specific ###
+*.log
+logs/
+heapdump.hprof

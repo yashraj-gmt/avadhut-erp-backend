@@ -107,6 +107,13 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- AWS SDK v2 S3 — for DigitalOcean Spaces (S3-compatible) -->
+		<dependency>
+			<groupId>software.amazon.awssdk</groupId>
+			<artifactId>s3</artifactId>
+			<version>2.25.60</version>
+		</dependency>
+
 	</dependencies>
 
 	<build>

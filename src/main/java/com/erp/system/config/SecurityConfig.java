@@ -26,6 +26,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
@@ -34,10 +35,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomUserDetailsService  userDetailsService;
-    private final JwtAuthenticationFilter   jwtAuthenticationFilter;
-    private final JwtAuthenticationEntryPoint entryPoint;
-    private final JwtAccessDeniedHandler    accessDeniedHandler;
+    private final CustomUserDetailsService     userDetailsService;
+    private final JwtAuthenticationFilter      jwtAuthenticationFilter;
+    private final JwtAuthenticationEntryPoint  entryPoint;
+    private final JwtAccessDeniedHandler       accessDeniedHandler;
+
+    /** Comma-separated allowed origins, e.g. http://165.232.186.76,https://yourdomain.com */
+    @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins:*}")
+    private String allowedOrigins;
 
     // ── Beans
 
@@ -106,8 +111,15 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // In production: replace with exact allowed origins
-        config.setAllowedOriginPatterns(List.of("*"));
+        // Driven by app.cors.allowed-origins property
+        // Dev default → "*" (wildcard pattern), Prod → exact IP/domain
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim).filter(s -> !s.isEmpty()).toList();
+        if (origins.size() == 1 && origins.get(0).equals("*")) {
+            config.setAllowedOriginPatterns(List.of("*"));
+        } else {
+            config.setAllowedOrigins(origins);
+        }
         config.setAllowedMethods(
                 List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
