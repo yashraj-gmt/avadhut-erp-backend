@@ -18,6 +18,7 @@ public class ProductSummaryResponse {
     private String     name;
     private String     productCode;
     private BigDecimal purchasePrice;
+    private BigDecimal rentPrice;
     private Integer    currentStock;
     private String     productBy;
     private Boolean    isActive;

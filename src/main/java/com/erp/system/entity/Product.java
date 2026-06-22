@@ -38,6 +38,9 @@ public class Product extends BaseEntity {
     @Column(name = "purchase_price", precision = 15, scale = 2)
     private BigDecimal purchasePrice;
 
+    @Column(name = "rent_price", precision = 15, scale = 2)
+    private BigDecimal rentPrice;
+
     @Column(name = "current_stock", nullable = false)
     private Integer currentStock = 0;
 

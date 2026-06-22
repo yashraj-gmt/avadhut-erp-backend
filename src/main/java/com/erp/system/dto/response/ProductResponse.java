@@ -19,6 +19,7 @@ public class ProductResponse {
     private String  productCode;
 
     private BigDecimal purchasePrice;
+    private BigDecimal rentPrice;
     private Integer    currentStock;
     private String     description;
     private String     productBy;

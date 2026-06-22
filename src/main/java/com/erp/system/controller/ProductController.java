@@ -38,6 +38,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/api/inventory/products")
+@CrossOrigin()
 @RequiredArgsConstructor
 public class ProductController {
 

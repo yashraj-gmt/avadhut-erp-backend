@@ -35,6 +35,9 @@ public class Generator extends BaseEntity {
     @Column(name = "purchase_price", precision = 15, scale = 2)
     private BigDecimal purchasePrice;
 
+    @Column(name = "rent_price", precision = 15, scale = 2)
+    private BigDecimal rentPrice;
+
     @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity = 0;
 

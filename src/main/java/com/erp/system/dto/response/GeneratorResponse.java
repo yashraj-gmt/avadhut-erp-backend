@@ -18,6 +18,7 @@ public class GeneratorResponse {
     private String     name;
     private String     generatorCode;
     private BigDecimal purchasePrice;
+    private BigDecimal rentPrice;
     private Integer    stockQuantity;
     private String     productBy;
     private String     imageUrl;

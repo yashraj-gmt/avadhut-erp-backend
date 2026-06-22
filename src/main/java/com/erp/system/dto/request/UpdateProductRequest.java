@@ -28,6 +28,10 @@ public class UpdateProductRequest {
     @Digits(integer = 13, fraction = 2)
     private BigDecimal purchasePrice;
 
+    @DecimalMin(value = "0.0", inclusive = true)
+    @Digits(integer = 13, fraction = 2)
+    private BigDecimal rentPrice;
+
     @Min(value = 0)
     private Integer stockQuantity;
 

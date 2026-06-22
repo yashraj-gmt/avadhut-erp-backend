@@ -224,6 +224,7 @@ public class ProductServiceImpl implements ProductService {
         p.setName(req.getName().trim());
         p.setProductCode(req.getProductCode().trim().toUpperCase());
         p.setPurchasePrice(req.getPurchasePrice());
+        p.setRentPrice(req.getRentPrice());
         p.setCurrentStock(req.getStockQuantity() != null ? req.getStockQuantity() : 0);
         p.setProductBy(req.getProductBy());
         p.setDescription(req.getDescription());
@@ -234,6 +235,7 @@ public class ProductServiceImpl implements ProductService {
         if (req.getName()          != null) p.setName(req.getName().trim());
         if (req.getProductCode()   != null) p.setProductCode(req.getProductCode().trim().toUpperCase());
         if (req.getPurchasePrice() != null) p.setPurchasePrice(req.getPurchasePrice());
+        if (req.getRentPrice()     != null) p.setRentPrice(req.getRentPrice());
         if (req.getProductBy()     != null) p.setProductBy(req.getProductBy());
         if (req.getDescription()   != null) p.setDescription(req.getDescription());
         if (req.getIsActive()      != null) p.setIsActive(req.getIsActive());

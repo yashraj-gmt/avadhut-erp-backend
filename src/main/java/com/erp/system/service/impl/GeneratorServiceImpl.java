@@ -56,6 +56,7 @@ public class GeneratorServiceImpl implements GeneratorService {
         generator.setName(request.getName().trim());
         generator.setGeneratorCode(request.getGeneratorCode().trim().toUpperCase());
         generator.setPurchasePrice(request.getPurchasePrice());
+        generator.setRentPrice(request.getRentPrice());
         generator.setStockQuantity(request.getStockQuantity() != null ? request.getStockQuantity() : 0);
         generator.setProductBy(request.getProductBy());
         generator.setDescription(request.getDescription());
@@ -122,6 +123,7 @@ public class GeneratorServiceImpl implements GeneratorService {
         }
 
         if (request.getPurchasePrice()  != null) generator.setPurchasePrice(request.getPurchasePrice());
+        if (request.getRentPrice()       != null) generator.setRentPrice(request.getRentPrice());
         if (request.getStockQuantity()  != null) generator.setStockQuantity(request.getStockQuantity());
         if (request.getProductBy()      != null) generator.setProductBy(request.getProductBy());
         if (request.getDescription()    != null) generator.setDescription(request.getDescription());

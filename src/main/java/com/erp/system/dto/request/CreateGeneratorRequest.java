@@ -22,6 +22,10 @@ public class CreateGeneratorRequest {
     @Digits(integer = 13, fraction = 2, message = "Invalid purchase price format")
     private BigDecimal purchasePrice;
 
+    @DecimalMin(value = "0.0", inclusive = true, message = "Rent price cannot be negative")
+    @Digits(integer = 13, fraction = 2, message = "Invalid rent price format")
+    private BigDecimal rentPrice;
+
     @Min(value = 0, message = "Stock quantity cannot be negative")
     private Integer stockQuantity = 0;
 
