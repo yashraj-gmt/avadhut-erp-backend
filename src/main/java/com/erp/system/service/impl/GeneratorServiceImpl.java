@@ -75,7 +75,7 @@ public class GeneratorServiceImpl implements GeneratorService {
         return generatorMapper.toResponse(saved);
     }
 
-    // ── Read ──────────────────────────────────────────────────────────────
+    // Read
 
     @Override
     @Transactional(readOnly = true)
@@ -91,7 +91,7 @@ public class GeneratorServiceImpl implements GeneratorService {
         return generatorMapper.toResponse(generator);
     }
 
-    // ── Update ────────────────────────────────────────────────────────────
+    // Update
 
     @Override
     @Transactional
@@ -145,7 +145,7 @@ public class GeneratorServiceImpl implements GeneratorService {
         return generatorMapper.toResponse(saved);
     }
 
-    // ── Soft-Delete ───────────────────────────────────────────────────────
+    // ── Soft-Delete
 
     @Override
     @Transactional

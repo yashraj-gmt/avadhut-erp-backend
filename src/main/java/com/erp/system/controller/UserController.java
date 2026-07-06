@@ -20,7 +20,6 @@ import java.util.Map;
 
 /**
  * REST controller for user management (admin panel).
- *
  * All endpoints under /api/admin/** already require ADMIN or SUPER_ADMIN
  * (enforced by SecurityConfig). Role-change and delete operations are
  * additionally restricted to SUPER_ADMIN via @PreAuthorize.
