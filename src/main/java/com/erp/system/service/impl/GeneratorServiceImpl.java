@@ -44,19 +44,25 @@ public class GeneratorServiceImpl implements GeneratorService {
             );
         }
 
+        Generator generator = new Generator();
+        
         // Validate unique code
-        if (generatorRepository.existsByGeneratorCodeIgnoreCase(request.getGeneratorCode())) {
-            throw new AppException(
-                    "Generator with code '" + request.getGeneratorCode() + "' already exists.",
-                    HttpStatus.CONFLICT
-            );
+        if (request.getGeneratorCode() != null && !request.getGeneratorCode().trim().isEmpty()) {
+            if (generatorRepository.existsByGeneratorCodeIgnoreCase(request.getGeneratorCode().trim())) {
+                throw new AppException(
+                        "Generator with code '" + request.getGeneratorCode() + "' already exists.",
+                        HttpStatus.CONFLICT
+                );
+            }
+            generator.setGeneratorCode(request.getGeneratorCode().trim().toUpperCase());
+        } else {
+            generator.setGeneratorCode(null);
         }
 
-        Generator generator = new Generator();
         generator.setName(request.getName().trim());
-        generator.setGeneratorCode(request.getGeneratorCode().trim().toUpperCase());
         generator.setPurchasePrice(request.getPurchasePrice());
-        generator.setRentPrice(request.getRentPrice());
+        generator.setPartyDieselRentPrice(request.getPartyDieselRentPrice());
+        generator.setWithDieselRentPrice(request.getWithDieselRentPrice());
         generator.setStockQuantity(request.getStockQuantity() != null ? request.getStockQuantity() : 0);
         generator.setProductBy(request.getProductBy());
         generator.setDescription(request.getDescription());
@@ -111,7 +117,7 @@ public class GeneratorServiceImpl implements GeneratorService {
         }
 
         // Code uniqueness check
-        if (request.getGeneratorCode() != null) {
+        if (request.getGeneratorCode() != null && !request.getGeneratorCode().trim().isEmpty()) {
             String newCode = request.getGeneratorCode().trim().toUpperCase();
             if (generatorRepository.existsByGeneratorCodeIgnoreCaseAndIdNot(newCode, id)) {
                 throw new AppException(
@@ -120,10 +126,13 @@ public class GeneratorServiceImpl implements GeneratorService {
                 );
             }
             generator.setGeneratorCode(newCode);
+        } else if (request.getGeneratorCode() != null && request.getGeneratorCode().trim().isEmpty()) {
+            generator.setGeneratorCode(null);
         }
 
-        if (request.getPurchasePrice()  != null) generator.setPurchasePrice(request.getPurchasePrice());
-        if (request.getRentPrice()       != null) generator.setRentPrice(request.getRentPrice());
+        if (request.getPurchasePrice()       != null) generator.setPurchasePrice(request.getPurchasePrice());
+        if (request.getPartyDieselRentPrice() != null) generator.setPartyDieselRentPrice(request.getPartyDieselRentPrice());
+        if (request.getWithDieselRentPrice()  != null) generator.setWithDieselRentPrice(request.getWithDieselRentPrice());
         if (request.getStockQuantity()  != null) generator.setStockQuantity(request.getStockQuantity());
         if (request.getProductBy()      != null) generator.setProductBy(request.getProductBy());
         if (request.getDescription()    != null) generator.setDescription(request.getDescription());

@@ -8,8 +8,13 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface OrderRepository extends JpaRepository<Order, Long> {
+public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
+
+    @Query("SELECT MAX(o.id) FROM Order o")
+    Long getMaxId();
 
     /** Count non-deleted orders for a customer. */
     long countByCustomerIdAndDeletedFalse(Long customerId);
@@ -59,4 +64,34 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
         ORDER BY o.createdAt DESC
         """)
     List<Order> findHistoryByCustomerId(@Param("customerId") Long customerId);
+
+    // ── Staff-scoped queries ──────────────────────────────────────────────────
+
+    /** All non-deleted orders assigned to a specific staff user. */
+    @Query("""
+        SELECT o FROM Order o
+        WHERE  o.assignedTo.id = :userId
+        AND    o.deleted = false
+        ORDER BY o.createdAt DESC
+        """)
+    List<Order> findAssignedOrders(@Param("userId") Long userId);
+
+    /** Count of non-deleted orders assigned to a specific staff user. */
+    @Query("""
+        SELECT COUNT(o)
+        FROM   Order o
+        WHERE  o.assignedTo.id = :userId
+        AND    o.deleted = false
+        """)
+    long countAssignedOrders(@Param("userId") Long userId);
+
+    /** Single assigned order — returns only if assigned to the given user. */
+    @Query("""
+        SELECT o FROM Order o
+        WHERE  o.id = :orderId
+        AND    o.assignedTo.id = :userId
+        AND    o.deleted = false
+        """)
+    Optional<Order> findAssignedOrderById(@Param("orderId") Long orderId,
+                                          @Param("userId")  Long userId);
 }

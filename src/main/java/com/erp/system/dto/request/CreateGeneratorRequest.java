@@ -14,7 +14,7 @@ public class CreateGeneratorRequest {
     @Size(max = 200, message = "Name must not exceed 200 characters")
     private String name;
 
-    @NotBlank(message = "Generator code is required")
+    // @NotBlank(message = "Generator code is required")
     @Size(max = 50, message = "Generator code must not exceed 50 characters")
     private String generatorCode;
 
@@ -22,9 +22,13 @@ public class CreateGeneratorRequest {
     @Digits(integer = 13, fraction = 2, message = "Invalid purchase price format")
     private BigDecimal purchasePrice;
 
-    @DecimalMin(value = "0.0", inclusive = true, message = "Rent price cannot be negative")
-    @Digits(integer = 13, fraction = 2, message = "Invalid rent price format")
-    private BigDecimal rentPrice;
+    @DecimalMin(value = "0.0", inclusive = true, message = "Party diesel rent price cannot be negative")
+    @Digits(integer = 13, fraction = 2, message = "Invalid party diesel rent price format")
+    private BigDecimal partyDieselRentPrice;
+
+    @DecimalMin(value = "0.0", inclusive = true, message = "With diesel rent price cannot be negative")
+    @Digits(integer = 13, fraction = 2, message = "Invalid with diesel rent price format")
+    private BigDecimal withDieselRentPrice;
 
     @Min(value = 0, message = "Stock quantity cannot be negative")
     private Integer stockQuantity = 0;

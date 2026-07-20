@@ -29,14 +29,17 @@ public class Generator extends BaseEntity {
     @Column(name = "name", nullable = false, length = 200)
     private String name;
 
-    @Column(name = "generator_code", unique = true, nullable = false, length = 50)
+    @Column(name = "generator_code", unique = true, length = 50)
     private String generatorCode;
 
     @Column(name = "purchase_price", precision = 15, scale = 2)
     private BigDecimal purchasePrice;
 
-    @Column(name = "rent_price", precision = 15, scale = 2)
-    private BigDecimal rentPrice;
+    @Column(name = "party_diesel_rent_price", precision = 15, scale = 2)
+    private BigDecimal partyDieselRentPrice;
+
+    @Column(name = "with_diesel_rent_price", precision = 15, scale = 2)
+    private BigDecimal withDieselRentPrice;
 
     @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity = 0;

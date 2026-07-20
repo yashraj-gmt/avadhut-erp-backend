@@ -18,7 +18,8 @@ public class GeneratorResponse {
     private String     name;
     private String     generatorCode;
     private BigDecimal purchasePrice;
-    private BigDecimal rentPrice;
+    private BigDecimal partyDieselRentPrice;
+    private BigDecimal withDieselRentPrice;
     private Integer    stockQuantity;
     private String     productBy;
     private String     imageUrl;

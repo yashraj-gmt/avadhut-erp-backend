@@ -89,6 +89,10 @@ public class SecurityConfig {
                                 SecurityConstants.ROLE_SUPER_ADMIN,
                                 SecurityConstants.ROLE_ADMIN)
 
+                        // STAFF only — scoped to assigned orders
+                        .requestMatchers("/api/staff/**")
+                        .hasAuthority(SecurityConstants.ROLE_STAFF)
+
                         .anyRequest().authenticated()
                 )
 
@@ -120,6 +124,7 @@ public class SecurityConfig {
         return source;
     }
 
+//
 //    @Bean
 //    public CommandLineRunner run(PasswordEncoder encoder) {
 //        return args -> {

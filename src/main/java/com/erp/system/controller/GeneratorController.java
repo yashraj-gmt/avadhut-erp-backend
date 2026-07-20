@@ -53,7 +53,7 @@ public class GeneratorController {
                 .body(ApiResponse.success("Generator created successfully.", data));
     }
 
-    // ── GET /api/admin/generators ────────────────────────────────────────
+    // ── GET /api/admin/generators     ────────────────────────────────────────
     @GetMapping
     public ResponseEntity<ApiResponse<PagedResponse<GeneratorResponse>>> getAll(
             @RequestParam(required = false)           String  search,

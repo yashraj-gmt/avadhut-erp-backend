@@ -22,7 +22,11 @@ public class UpdateGeneratorRequest {
 
     @DecimalMin(value = "0.0", inclusive = true)
     @Digits(integer = 13, fraction = 2)
-    private BigDecimal rentPrice;
+    private BigDecimal partyDieselRentPrice;
+
+    @DecimalMin(value = "0.0", inclusive = true)
+    @Digits(integer = 13, fraction = 2)
+    private BigDecimal withDieselRentPrice;
 
     @Min(value = 0)
     private Integer stockQuantity;

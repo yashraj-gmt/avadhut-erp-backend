@@ -6,10 +6,6 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-/**
- * Single chronological entry in a customer's activity timeline.
- * Covers ORDER, INVOICE, and PAYMENT events.
- */
 @Getter
 @Setter
 @Builder
@@ -22,7 +18,7 @@ public class CustomerHistoryEntry {
     private String     type;
 
     /** The PK of the source entity (orderId / invoiceId / paymentId). */
-    private Long       referenceId;
+    private Long        referenceId;
 
     /** Human-readable reference (orderNumber / invoiceNumber / "Payment"). */
     private String     referenceNumber;

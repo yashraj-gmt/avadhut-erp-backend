@@ -12,8 +12,9 @@ import java.util.List;
 
 public interface CustomerRepository
         extends JpaRepository<Customer, Long>, JpaSpecificationExecutor<Customer> {
-
     boolean existsByMobile(String mobile);
+
+    java.util.Optional<Customer> findFirstByMobile(String mobile);
 
     boolean existsByMobileAndIdNot(String mobile, Long id);
 

@@ -17,6 +17,8 @@ public interface GeneratorRepository extends JpaRepository<Generator, Long> {
 
     boolean existsByGeneratorCodeIgnoreCaseAndIdNot(String generatorCode, Long id);
 
+    java.util.Optional<Generator> findByGeneratorCodeIgnoreCase(String generatorCode);
+
     @Query("""
         SELECT g FROM Generator g
         WHERE g.deleted = false

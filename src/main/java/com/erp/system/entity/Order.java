@@ -1,6 +1,7 @@
 package com.erp.system.entity;
 
 import com.erp.system.enums.OrderStatus;
+import com.erp.system.enums.BillingStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -33,8 +34,8 @@ public class Order extends BaseEntity {
     private Long id;
 
     /**
-     * Human-readable order number (e.g. ORD-20240001).
-     * Generated in the service layer before persisting.
+     * Human-readable order number in GO{year}{seq} format (e.g. GO20261, GO20262).
+     * Generated in the service layer before persisting. Must be unique.
      */
     @Column(name = "order_number", unique = true, nullable = false, length = 30)
     private String orderNumber;
@@ -47,8 +48,18 @@ public class Order extends BaseEntity {
     @Column(name = "order_status", nullable = false, length = 20)
     private OrderStatus orderStatus = OrderStatus.PENDING;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_status", nullable = false, length = 20)
+    private BillingStatus billingStatus = BillingStatus.PENDING;
+
     @Column(name = "delivery_date")
     private LocalDate deliveryDate;
+
+    @Column(name = "function_date_from")
+    private LocalDate functionDateFrom;
+
+    @Column(name = "function_date_to")
+    private LocalDate functionDateTo;
 
     @Column(name = "subtotal", nullable = false, precision = 15, scale = 2)
     private BigDecimal subtotal = BigDecimal.ZERO;
@@ -64,6 +75,34 @@ public class Order extends BaseEntity {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    /** Optional alternate contact number for the client */
+    @Column(name = "alternate_mobile", length = 20)
+    private String alternateMobile;
+
+    /** Address of the site */
+    @Column(name = "site_address", columnDefinition = "TEXT")
+    private String siteAddress;
+
+    /** Google Maps or search link for the site location */
+    @Column(name = "site_address_link", columnDefinition = "TEXT")
+    private String siteAddressLink;
+
+    /** Mobile number of the assigned operator */
+    @Column(name = "operator_mobile", length = 20)
+    private String operatorMobile;
+
+    /** Name of the assigned operator */
+    @Column(name = "operator_name", length = 150)
+    private String operatorName;
+
+    /** Whether cable is required for this order */
+    @Column(name = "cable_required")
+    private Boolean cableRequired = false;
+
+    /** True = diesel provided with owner/company; False = party arranges diesel */
+    @Column(name = "with_diesel")
+    private Boolean withDiesel = true;
 
     /** Employee/user responsible for this order */
     @ManyToOne(fetch = FetchType.LAZY)
