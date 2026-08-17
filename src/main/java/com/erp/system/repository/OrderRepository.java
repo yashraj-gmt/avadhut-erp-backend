@@ -16,6 +16,11 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     @Query("SELECT MAX(o.id) FROM Order o")
     Long getMaxId();
 
+    boolean existsByBillNumber(String billNumber);
+
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.billNumber IS NOT NULL")
+    long countByBillNumberNotNull();
+
     /** Count non-deleted orders for a customer. */
     long countByCustomerIdAndDeletedFalse(Long customerId);
 

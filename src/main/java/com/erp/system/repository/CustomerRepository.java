@@ -15,6 +15,7 @@ public interface CustomerRepository
     boolean existsByMobile(String mobile);
 
     java.util.Optional<Customer> findFirstByMobile(String mobile);
+    java.util.Optional<Customer> findFirstByNameAndMobile(String name, String mobile);
 
     boolean existsByMobileAndIdNot(String mobile, Long id);
 

@@ -14,6 +14,7 @@ import java.util.List;
 public class OrderResponse {
     private Long id;
     private String orderNumber;
+    private String billNumber;
     
     private String clientName;
     private String contactNumber;
@@ -54,6 +55,7 @@ public class OrderResponse {
         private String generatorName;
         private String generatorCode; // Added code if needed
         private String cableSize;
+        private BigDecimal cableRate;
         
         private LocalTime startTime;
         private LocalTime endTime;

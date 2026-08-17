@@ -27,6 +27,8 @@ public class UpdateOrderBillingRequest {
         @NotNull
         private BigDecimal dieselPerHour;
 
+        private BigDecimal cableRate;
+
         private List<DieselEntryRequest> dieselEntries;
     }
 

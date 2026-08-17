@@ -7,6 +7,9 @@ import com.erp.system.dto.response.PagedResponse;
 import org.springframework.data.domain.Pageable;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.util.List;
+
 public interface GeneratorService {
 
     /** Create a generator; optionally attach a single image file. */
@@ -20,4 +23,6 @@ public interface GeneratorService {
     GeneratorResponse update(Long id, UpdateGeneratorRequest request, MultipartFile image);
 
     void delete(Long id);
+
+    List<GeneratorResponse> getForDropdownWithAvailability(LocalDate startDate, LocalDate endDate, Long excludeOrderId);
 }

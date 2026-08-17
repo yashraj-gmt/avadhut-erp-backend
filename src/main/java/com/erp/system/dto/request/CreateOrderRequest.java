@@ -51,6 +51,8 @@ public class CreateOrderRequest {
         
         private String cableSize;
         
+        private java.math.BigDecimal cableRate;
+        
         private LocalTime startTime;
         
         private LocalTime endTime;

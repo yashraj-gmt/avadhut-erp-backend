@@ -21,6 +21,7 @@ public class GeneratorResponse {
     private BigDecimal partyDieselRentPrice;
     private BigDecimal withDieselRentPrice;
     private Integer    stockQuantity;
+    private Integer    availableStock;
     private String     productBy;
     private String     imageUrl;
     private String     description;

@@ -40,6 +40,9 @@ public class Order extends BaseEntity {
     @Column(name = "order_number", unique = true, nullable = false, length = 30)
     private String orderNumber;
 
+    @Column(name = "bill_number", unique = true, length = 30)
+    private String billNumber;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;

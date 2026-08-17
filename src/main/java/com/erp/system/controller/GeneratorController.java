@@ -17,6 +17,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.format.annotation.DateTimeFormat;
+
 /**
  * Generator REST controller.
  *
@@ -71,6 +75,19 @@ public class GeneratorController {
                 generatorService.getAll(search, isActive, PageRequest.of(page, size, sort));
 
         return ResponseEntity.ok(ApiResponse.success("Generators retrieved successfully.", data));
+    }
+
+    // ── GET /api/admin/generators/availability
+    @GetMapping("/availability")
+    public ResponseEntity<ApiResponse<List<GeneratorResponse>>> getAvailability(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Long excludeOrderId) {
+
+        List<GeneratorResponse> data =
+                generatorService.getForDropdownWithAvailability(startDate, endDate, excludeOrderId);
+
+        return ResponseEntity.ok(ApiResponse.success("Generator stock availability calculated successfully.", data));
     }
 
     // ── GET /api/admin/generators/{id} ───────────────────────────────────

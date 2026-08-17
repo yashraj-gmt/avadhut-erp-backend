@@ -8,14 +8,24 @@ import com.erp.system.entity.Product;
 import com.erp.system.entity.ProductImage;
 import com.erp.system.repository.ProductImageRepository;
 import com.erp.system.service.FileUploadService;
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * Abstract class (not interface) so we can @Autowired Spring beans for
- * computed fields that MapStruct cannot derive from the entity alone.
+ * Maps Product / ProductImage entities to response DTOs.
+ *
+ * All three response DTOs use Lombok @Builder, which means MapStruct generates code
+ * that calls builder().build() and returns the immutable object — BEFORE any
+ * @AfterMapping hook can mutate it via setters. Therefore we must NOT use @AfterMapping
+ * here. Instead every computed field is wired directly via @Mapping(expression = "java(...)")
+ * so it is set inside the builder chain, before build() is called.
+ *
+ * Rule: the expression parameter sees the method-parameter name exactly as declared
+ * in the abstract method signature (e.g. "product", "image").
  */
 @Mapper(componentModel = "spring")
 public abstract class ProductMapper {
@@ -23,43 +33,54 @@ public abstract class ProductMapper {
     @Autowired protected FileUploadService      fileUploadService;
     @Autowired protected ProductImageRepository imageRepository;
 
-    // ── Detail response ───────────────────────────────────────────────────
+    // ── Detail response ─────────────────────────────────────────────────────
 
-    @Mapping(target = "images", ignore = true)
+    /**
+     * The images list requires a DB query + per-image URL conversion.
+     * We delegate to a helper method that is visible inside the java() expression.
+     */
+    @Mapping(
+        target  = "images",
+        expression = "java(toImageResponseList(product))"
+    )
     public abstract ProductResponse toDetailResponse(Product product);
 
-    @AfterMapping
-    protected void enrichDetailResponse(Product p,
-                                        @MappingTarget ProductResponse r) {
-        List<ProductImage> imgs =
-                imageRepository.findByProductIdOrderByDisplayOrderAsc(p.getId());
-        r.setImages(imgs.stream().map(this::toImageResponse).toList());
+    /**
+     * Helper called from the java() expression above.
+     * Loads all images for the product and converts each one to a response DTO.
+     */
+    protected List<ProductImageResponse> toImageResponseList(Product product) {
+        return imageRepository
+                .findByProductIdOrderByDisplayOrderAsc(product.getId())
+                .stream()
+                .map(this::toImageResponse)
+                .collect(Collectors.toList());
     }
 
-    // ── Summary response (list) ───────────────────────────────────────────
+    // ── Summary response (paginated list) ────────────────────────────────────
 
-    @Mapping(target = "primaryImageUrl", ignore = true)
+    @Mapping(
+        target = "primaryImageUrl",
+        expression = "java(resolvePrimaryImageUrl(product))"
+    )
     public abstract ProductSummaryResponse toSummaryResponse(Product product);
 
-    @AfterMapping
-    protected void enrichSummaryResponse(Product p,
-                                         @MappingTarget ProductSummaryResponse r) {
-        String url = imageRepository
-                .findByProductIdAndIsPrimaryTrue(p.getId())
+    /**
+     * Helper called from the java() expression above.
+     * Returns the public URL of the primary image, or null if none.
+     */
+    protected String resolvePrimaryImageUrl(Product product) {
+        return imageRepository
+                .findByProductIdAndIsPrimaryTrue(product.getId())
                 .map(img -> fileUploadService.toPublicUrl(img.getImageUrl()))
                 .orElse(null);
-        r.setPrimaryImageUrl(url);
     }
 
-    // ── Image response ────────────────────────────────────────────────────
+    // ── Image response (per-image) ────────────────────────────────────────────
 
-    /** imageUrl is a relative path on entity; convert to public URL via service. */
-    @Mapping(target = "imageUrl", ignore = true)
+    @Mapping(
+        target = "imageUrl",
+        expression = "java(fileUploadService.toPublicUrl(image.getImageUrl()))"
+    )
     public abstract ProductImageResponse toImageResponse(ProductImage image);
-
-    @AfterMapping
-    protected void enrichImageResponse(ProductImage img,
-                                       @MappingTarget ProductImageResponse r) {
-        r.setImageUrl(fileUploadService.toPublicUrl(img.getImageUrl()));
-    }
-}
+}

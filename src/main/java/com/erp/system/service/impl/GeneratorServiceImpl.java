@@ -20,6 +20,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.erp.system.entity.OrderItem;
+import com.erp.system.entity.Order;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.stream.Collectors;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -56,7 +65,9 @@ public class GeneratorServiceImpl implements GeneratorService {
             }
             generator.setGeneratorCode(request.getGeneratorCode().trim().toUpperCase());
         } else {
-            generator.setGeneratorCode(null);
+            Long maxId = generatorRepository.getMaxId();
+            long count = (maxId == null ? 0 : maxId) + 1;
+            generator.setGeneratorCode("GEN-" + String.format("%03d", count));
         }
 
         generator.setName(request.getName().trim());
@@ -126,8 +137,6 @@ public class GeneratorServiceImpl implements GeneratorService {
                 );
             }
             generator.setGeneratorCode(newCode);
-        } else if (request.getGeneratorCode() != null && request.getGeneratorCode().trim().isEmpty()) {
-            generator.setGeneratorCode(null);
         }
 
         if (request.getPurchasePrice()       != null) generator.setPurchasePrice(request.getPurchasePrice());
@@ -163,6 +172,67 @@ public class GeneratorServiceImpl implements GeneratorService {
         generator.setDeleted(true);
         generatorRepository.save(generator);
         log.info("Generator soft-deleted: id={}", id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GeneratorResponse> getForDropdownWithAvailability(LocalDate startDate, LocalDate endDate, Long excludeOrderId) {
+        List<Generator> generators = generatorRepository.findAll().stream()
+                .filter(g -> g.getIsActive() != null && g.getIsActive() && (g.getDeleted() == null || !g.getDeleted()))
+                .collect(Collectors.toList());
+
+        if (startDate == null || endDate == null) {
+            return generators.stream()
+                    .map(g -> {
+                        GeneratorResponse res = generatorMapper.toResponse(g);
+                        res.setAvailableStock(g.getStockQuantity());
+                        return res;
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        List<OrderItem> overlappingBookings = generatorRepository.findAllOverlappingBookings(startDate, endDate, excludeOrderId);
+
+        Map<Long, List<OrderItem>> bookingsByGenerator = overlappingBookings.stream()
+                .filter(oi -> oi.getGenerator() != null)
+                .collect(Collectors.groupingBy(oi -> oi.getGenerator().getId()));
+
+        List<GeneratorResponse> responses = new ArrayList<>();
+        for (Generator g : generators) {
+            int totalStock = g.getStockQuantity() != null ? g.getStockQuantity() : 0;
+            List<OrderItem> bookings = bookingsByGenerator.getOrDefault(g.getId(), Collections.emptyList());
+
+            int minAvailable = totalStock;
+            for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
+                final LocalDate currentDay = d;
+                int bookedOnDay = bookings.stream()
+                        .filter(oi -> {
+                            Order o = oi.getOrder();
+                            return o != null 
+                                && o.getFunctionDateFrom() != null 
+                                && o.getFunctionDateTo() != null
+                                && !o.getFunctionDateFrom().isAfter(currentDay) 
+                                && !o.getFunctionDateTo().isBefore(currentDay);
+                        })
+                        .mapToInt(oi -> oi.getQuantity() != null ? oi.getQuantity() : 0)
+                        .sum();
+
+                int availableOnDay = totalStock - bookedOnDay;
+                if (availableOnDay < minAvailable) {
+                    minAvailable = availableOnDay;
+                }
+            }
+
+            if (minAvailable < 0) {
+                minAvailable = 0;
+            }
+
+            GeneratorResponse res = generatorMapper.toResponse(g);
+            res.setAvailableStock(minAvailable);
+            responses.add(res);
+        }
+
+        return responses;
     }
 
     // ── Helper ────────────────────────────────────────────────────────────

@@ -18,7 +18,6 @@ public class UpdateUserRequest {
     @Size(max = 100)
     private String name;
 
-    @NotBlank(message = "Email is required")
     @Email(message = "Enter a valid email address")
     @Size(max = 100)
     private String email;

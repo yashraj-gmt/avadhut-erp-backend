@@ -48,7 +48,7 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse create(CreateOrderRequest request) {
         log.info("Creating order for client: {}", request.getClientName());
 
-        Customer customer = customerRepository.findFirstByMobile(request.getContactNumber())
+        Customer customer = customerRepository.findFirstByNameAndMobile(request.getClientName(), request.getContactNumber())
                 .orElseGet(() -> {
                     Customer newCust = new Customer();
                     newCust.setName(request.getClientName());
@@ -82,8 +82,13 @@ public class OrderServiceImpl implements OrderService {
             }
 
             if (status != null && !status.trim().isEmpty()) {
-                if (status.equalsIgnoreCase("COMPLETED") || status.equalsIgnoreCase("CANCELLED") || status.equalsIgnoreCase("CONFIRMED")) {
-                    predicates.add(cb.equal(root.get("orderStatus"), com.erp.system.enums.OrderStatus.valueOf(status.toUpperCase())));
+                String st = status.trim().toUpperCase();
+                if (st.equals("BOOKED")) st = "PENDING";
+                try {
+                    com.erp.system.enums.OrderStatus os = com.erp.system.enums.OrderStatus.valueOf(st);
+                    predicates.add(cb.equal(root.get("orderStatus"), os));
+                } catch (IllegalArgumentException e) {
+                    log.warn("Invalid order status filter: {}", status);
                 }
             }
 
@@ -122,28 +127,13 @@ public class OrderServiceImpl implements OrderService {
         String newName = request.getClientName();
         Customer currentCustomer = order.getCustomer();
 
-        if (currentCustomer != null && !currentCustomer.getMobile().equals(newMobile)) {
-            // Mobile number changed. Check if it belongs to another customer
-            Customer existingCustomer = customerRepository.findFirstByMobile(newMobile).orElse(null);
-            if (existingCustomer != null) {
-                // Link order to the existing customer
-                order.setCustomer(existingCustomer);
-                // Optionally update the existing customer's name if they want? 
-                // The requirement says "updating a contact number does not overwrite or replace client records"
-                // So we do not change existingCustomer's name.
-            } else {
-                // New mobile number, just update the current customer
-                currentCustomer.setName(newName);
-                currentCustomer.setMobile(newMobile);
-                customerRepository.save(currentCustomer);
-            }
-        } else if (currentCustomer != null) {
-            // Mobile didn't change, just update the name
+        if (currentCustomer != null) {
             currentCustomer.setName(newName);
+            currentCustomer.setMobile(newMobile);
             customerRepository.save(currentCustomer);
         } else {
             // Fallback if no customer was set
-            Customer customer = customerRepository.findFirstByMobile(newMobile)
+            Customer customer = customerRepository.findFirstByNameAndMobile(newName, newMobile)
                 .orElseGet(() -> {
                     Customer newCust = new Customer();
                     newCust.setName(newName);
@@ -220,6 +210,78 @@ public class OrderServiceImpl implements OrderService {
             else if (parts.length == 1) order.setFunctionDateTo(LocalDate.parse(parts[0].trim()));
         }
 
+        // Validate stock availability for each requested generator
+        LocalDate startDate = order.getFunctionDateFrom();
+        LocalDate endDate = order.getFunctionDateTo();
+        if (startDate != null && endDate != null && request.getGenerators() != null) {
+            Long excludeOrderId = order.getId();
+            List<OrderItem> overlappingBookings = generatorRepository.findAllOverlappingBookings(startDate, endDate, excludeOrderId);
+
+            java.util.Map<Long, List<OrderItem>> bookingsByGenerator = overlappingBookings.stream()
+                    .filter(oi -> oi.getGenerator() != null)
+                    .collect(Collectors.groupingBy(oi -> oi.getGenerator().getId()));
+
+            java.util.Map<Long, Integer> requestedCounts = new java.util.HashMap<>();
+            for (CreateOrderRequest.OrderItemRequest itemReq : request.getGenerators()) {
+                Generator generator;
+                String genIdStr = itemReq.getGeneratorId();
+                try {
+                    Long genIdLong = Long.parseLong(genIdStr);
+                    generator = generatorRepository.findById(genIdLong)
+                            .orElseThrow(() -> new AppException("Generator not found with id: " + genIdStr, HttpStatus.NOT_FOUND));
+                } catch (NumberFormatException e) {
+                    generator = generatorRepository.findByGeneratorCodeIgnoreCase(genIdStr)
+                            .orElseThrow(() -> new AppException("Generator not found with code: " + genIdStr, HttpStatus.NOT_FOUND));
+                }
+                requestedCounts.put(generator.getId(), requestedCounts.getOrDefault(generator.getId(), 0) + 1);
+            }
+
+            for (java.util.Map.Entry<Long, Integer> entry : requestedCounts.entrySet()) {
+                Long generatorId = entry.getKey();
+                int requestedQty = entry.getValue();
+
+                Generator generator = generatorRepository.findById(generatorId)
+                        .orElseThrow(() -> new AppException("Generator not found", HttpStatus.NOT_FOUND));
+
+                int totalStock = generator.getStockQuantity() != null ? generator.getStockQuantity() : 0;
+                List<OrderItem> bookings = bookingsByGenerator.getOrDefault(generatorId, java.util.Collections.emptyList());
+
+                int minAvailable = totalStock;
+                for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
+                    final LocalDate currentDay = d;
+                    int bookedOnDay = bookings.stream()
+                            .filter(oi -> {
+                                Order o = oi.getOrder();
+                                return o != null 
+                                    && o.getFunctionDateFrom() != null 
+                                    && o.getFunctionDateTo() != null
+                                    && !o.getFunctionDateFrom().isAfter(currentDay) 
+                                    && !o.getFunctionDateTo().isBefore(currentDay);
+                            })
+                            .mapToInt(oi -> oi.getQuantity() != null ? oi.getQuantity() : 0)
+                            .sum();
+
+                    int availableOnDay = totalStock - bookedOnDay;
+                    if (availableOnDay < minAvailable) {
+                        minAvailable = availableOnDay;
+                    }
+                }
+
+                if (minAvailable < 0) {
+                    minAvailable = 0;
+                }
+
+                if (requestedQty > minAvailable) {
+                    throw new AppException(
+                        "Insufficient stock for generator '" + generator.getName() + 
+                        "' for the selected dates. Requested: " + requestedQty + 
+                        ", Available: " + minAvailable, 
+                        HttpStatus.BAD_REQUEST
+                    );
+                }
+            }
+        }
+
         BigDecimal subtotal = BigDecimal.ZERO;
         if (request.getGenerators() != null) {
             for (CreateOrderRequest.OrderItemRequest itemReq : request.getGenerators()) {
@@ -241,11 +303,22 @@ public class OrderServiceImpl implements OrderService {
                 item.setProductName(generator.getName());
                 item.setQuantity(1);
                 
-                BigDecimal rate = itemReq.getRate() != null ? itemReq.getRate() : (order.getWithDiesel() ? generator.getWithDieselRentPrice() : generator.getPartyDieselRentPrice());
+                // Generator rent is ALWAYS partyDieselRentPrice (base generator rent)
+                BigDecimal rate = itemReq.getRate() != null ? itemReq.getRate() : generator.getPartyDieselRentPrice();
                 if(rate == null) rate = BigDecimal.ZERO;
                 item.setRate(rate);
 
+                // Diesel rate is withDieselRentPrice if WITH_OWNER, else 0
+                if (order.getWithDiesel()) {
+                    item.setDieselRate(generator.getWithDieselRentPrice() != null ? generator.getWithDieselRentPrice() : BigDecimal.ZERO);
+                } else {
+                    item.setDieselRate(BigDecimal.ZERO);
+                }
+
                 item.setCableSize(itemReq.getCableSize());
+                if (itemReq.getCableRate() != null) {
+                    item.setCableRate(itemReq.getCableRate());
+                }
                 item.setStartTime(itemReq.getStartTime());
                 item.setEndTime(itemReq.getEndTime());
                 item.setDuration(itemReq.getDuration());
@@ -271,20 +344,36 @@ public class OrderServiceImpl implements OrderService {
             }
         }
 
-        List<OrderResponse.OrderItemResponse> items = o.getOrderItems().stream().map(i -> 
-            OrderResponse.OrderItemResponse.builder()
+        List<OrderResponse.OrderItemResponse> items = o.getOrderItems().stream().map(i -> {
+            // Safely resolve generator fields — the referenced Generator may have been
+            // soft-deleted or orphaned since the order was created. Accessing a Hibernate
+            // proxy for a missing entity throws EntityNotFoundException at initialization
+            // time, so we guard each access individually.
+            Long generatorId = null;
+            String generatorCode = null;
+            try {
+                if (i.getGenerator() != null) {
+                    generatorId = i.getGenerator().getId();
+                    generatorCode = i.getGenerator().getGeneratorCode();
+                }
+            } catch (jakarta.persistence.EntityNotFoundException ignored) {
+                // Generator was deleted; leave generatorId/generatorCode as null
+            }
+
+            return OrderResponse.OrderItemResponse.builder()
                 .id(i.getId())
-                .generatorId(i.getGenerator() != null ? i.getGenerator().getId() : null)
+                .generatorId(generatorId)
                 .generatorName(i.getProductName())
-                .generatorCode(i.getGenerator() != null ? i.getGenerator().getGeneratorCode() : null)
+                .generatorCode(generatorCode)
                 .cableSize(i.getCableSize())
+                .cableRate(i.getCableRate())
                 .startTime(i.getStartTime())
                 .endTime(i.getEndTime())
                 .duration(i.getDuration())
                 .rate(i.getRate())
                 .dieselRate(i.getDieselRate())
                 .totalAmount(i.getTotalAmount())
-                .dieselEntries(i.getDieselEntries().stream().map(de -> 
+                .dieselEntries(i.getDieselEntries().stream().map(de ->
                     OrderResponse.DieselEntryResponse.builder()
                         .id(de.getId())
                         .entryDate(de.getEntryDate())
@@ -293,12 +382,13 @@ public class OrderServiceImpl implements OrderService {
                         .duration(de.getDuration())
                         .build()
                 ).collect(Collectors.toList()))
-                .build()
-        ).collect(Collectors.toList());
+                .build();
+        }).collect(Collectors.toList());
 
         return OrderResponse.builder()
                 .id(o.getId())
                 .orderNumber(o.getOrderNumber())
+                .billNumber(o.getBillNumber())
                 .clientName(o.getCustomer() != null ? o.getCustomer().getName() : null)
                 .contactNumber(o.getCustomer() != null ? o.getCustomer().getMobile() : null)
                 .alternateMobile(o.getAlternateMobile())
@@ -347,6 +437,9 @@ public class OrderServiceImpl implements OrderService {
 
                 item.setRate(itemReq.getRentPerDay());
                 item.setDieselRate(itemReq.getDieselPerHour());
+                if (itemReq.getCableRate() != null) {
+                    item.setCableRate(itemReq.getCableRate());
+                }
 
                 // Update diesel entries
                 item.getDieselEntries().clear();
@@ -361,14 +454,12 @@ public class OrderServiceImpl implements OrderService {
                     }
                 }
 
-                // In a real application, you would calculate totalAmount from rent + (diesel duration * dieselRate) etc.
-                // Assuming frontend sends pre-calculated or we just let it be. But here we might need to compute:
-                long days = 1; // Assuming 1 for now if calculation is not exact here, or rely on frontend if we add a total field.
+                long days = 1;
                 if(order.getFunctionDateFrom() != null && order.getFunctionDateTo() != null) {
                     days = java.time.temporal.ChronoUnit.DAYS.between(order.getFunctionDateFrom(), order.getFunctionDateTo()) + 1;
                 }
                 
-                BigDecimal totalRent = item.getRate().multiply(BigDecimal.valueOf(days));
+                BigDecimal totalRent = item.getRate() != null ? item.getRate().multiply(BigDecimal.valueOf(days)) : BigDecimal.ZERO;
                 BigDecimal totalDiesel = BigDecimal.ZERO;
                 if (item.getDieselRate() != null) {
                     for (OrderItemDieselEntry de : item.getDieselEntries()) {
@@ -377,8 +468,12 @@ public class OrderServiceImpl implements OrderService {
                         }
                     }
                 }
+                BigDecimal totalCable = BigDecimal.ZERO;
+                if (Boolean.TRUE.equals(order.getCableRequired()) && item.getCableRate() != null) {
+                    totalCable = item.getCableRate().multiply(BigDecimal.valueOf(days));
+                }
 
-                item.setTotalAmount(totalRent.add(totalDiesel));
+                item.setTotalAmount(totalRent.add(totalDiesel).add(totalCable));
                 subtotal = subtotal.add(item.getTotalAmount());
             }
         }
@@ -399,10 +494,36 @@ public class OrderServiceImpl implements OrderService {
             throw new AppException("Billing is already completed.", HttpStatus.BAD_REQUEST);
         }
         order.setBillingStatus(BillingStatus.COMPLETED);
+        if (order.getBillNumber() == null) {
+            order.setBillNumber(generateBillNumber());
+        }
         if (order.getOrderStatus() == OrderStatus.PENDING) {
             order.setOrderStatus(OrderStatus.CONFIRMED);
         }
         Order saved = orderRepository.save(order);
         return toDto(saved);
+    }
+
+    private String generateBillNumber() {
+        long count = orderRepository.countByBillNumberNotNull();
+        long seq = count + 1;
+        while (true) {
+            String candidate = formatBillNumber(seq);
+            if (!orderRepository.existsByBillNumber(candidate)) {
+                return candidate;
+            }
+            seq++;
+        }
+    }
+
+    private String formatBillNumber(long seq) {
+        long group = (seq - 1) / 1000;
+        long num = (seq - 1) % 1000 + 1;
+        if (group == 0) {
+            return String.format("%05d", num);
+        } else {
+            char letter = (char) ('A' + (group - 1));
+            return letter + String.format("%04d", num);
+        }
     }
 }

@@ -78,6 +78,9 @@ public class OrderItem extends BaseEntity {
     @Column(name = "cable_size", length = 30)
     private String cableSize;
 
+    @Column(name = "cable_rate", precision = 15, scale = 2)
+    private BigDecimal cableRate;
+
     /** Billing date for this specific generator row (may differ per day in multi-day orders) */
     @Column(name = "billing_date")
     private LocalDate billingDate;
