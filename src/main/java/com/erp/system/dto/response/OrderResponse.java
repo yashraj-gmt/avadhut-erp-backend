@@ -36,6 +36,12 @@ public class OrderResponse {
     
     private String orderStatus;
     private String billingStatus;
+
+    /** Payment due date — null until billing is first saved. */
+    private LocalDate paymentDueDate;
+
+    /** Payment status: PENDING, PAID, PARTIAL_PAID, OVERDUE */
+    private String paymentStatus;
     
     private BigDecimal subtotal;
     private BigDecimal discountAmount;

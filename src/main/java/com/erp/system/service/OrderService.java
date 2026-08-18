@@ -19,6 +19,9 @@ public interface OrderService {
     OrderResponse updateBilling(Long id, UpdateOrderBillingRequest request);
 
     OrderResponse completeBilling(Long id);
+
+    /** Mark payment for this order as PAID. */
+    OrderResponse markPaymentDone(Long id);
     
     void delete(Long id);
 }

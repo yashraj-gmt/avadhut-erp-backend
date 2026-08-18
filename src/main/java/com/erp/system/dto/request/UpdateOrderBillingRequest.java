@@ -13,6 +13,9 @@ public class UpdateOrderBillingRequest {
 
     private BigDecimal discountAmount;
 
+    /** Optional due date for payment. If null, backend defaults to today + 7 days. */
+    private LocalDate paymentDueDate;
+
     @NotNull
     private List<BillingItemRequest> generators;
 

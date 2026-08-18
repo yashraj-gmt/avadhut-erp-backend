@@ -87,6 +87,12 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success("Billing marked as completed.", data));
     }
 
+    @PostMapping("/{id}/payment/done")
+    public ResponseEntity<ApiResponse<OrderResponse>> markPaymentDone(@PathVariable Long id) {
+        OrderResponse data = orderService.markPaymentDone(id);
+        return ResponseEntity.ok(ApiResponse.success("Payment marked as done.", data));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         orderService.delete(id);

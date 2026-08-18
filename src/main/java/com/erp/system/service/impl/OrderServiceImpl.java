@@ -12,6 +12,7 @@ import com.erp.system.entity.OrderItem;
 import com.erp.system.entity.OrderItemDieselEntry;
 import com.erp.system.enums.OrderStatus;
 import com.erp.system.enums.BillingStatus;
+import com.erp.system.enums.PaymentStatus;
 import com.erp.system.exception.AppException;
 import com.erp.system.repository.CustomerRepository;
 import com.erp.system.repository.GeneratorRepository;
@@ -404,6 +405,8 @@ public class OrderServiceImpl implements OrderService {
                 .functionDate(funcDate)
                 .orderStatus(o.getOrderStatus() != null ? o.getOrderStatus().name() : null)
                 .billingStatus(o.getBillingStatus() != null ? o.getBillingStatus().name() : null)
+                .paymentDueDate(o.getPaymentDueDate())
+                .paymentStatus(o.getPaymentStatus() != null ? o.getPaymentStatus().name() : PaymentStatus.PENDING.name())
                 .subtotal(o.getSubtotal())
                 .discountAmount(o.getDiscountAmount())
                 .taxAmount(o.getTaxAmount())
@@ -482,6 +485,13 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal finalAmt = subtotal.subtract(discount).max(BigDecimal.ZERO);
         order.setFinalAmount(finalAmt);
 
+        // Set paymentDueDate: use supplied value, or default to today + 7 days if not yet set
+        if (request.getPaymentDueDate() != null) {
+            order.setPaymentDueDate(request.getPaymentDueDate());
+        } else if (order.getPaymentDueDate() == null) {
+            order.setPaymentDueDate(LocalDate.now().plusDays(7));
+        }
+
         Order saved = orderRepository.save(order);
         return toDto(saved);
     }
@@ -500,6 +510,19 @@ public class OrderServiceImpl implements OrderService {
         if (order.getOrderStatus() == OrderStatus.PENDING) {
             order.setOrderStatus(OrderStatus.CONFIRMED);
         }
+        // Set default due date on completion if not already set
+        if (order.getPaymentDueDate() == null) {
+            order.setPaymentDueDate(LocalDate.now().plusDays(7));
+        }
+        Order saved = orderRepository.save(order);
+        return toDto(saved);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse markPaymentDone(Long id) {
+        Order order = findOrderOrThrow(id);
+        order.setPaymentStatus(PaymentStatus.PAID);
         Order saved = orderRepository.save(order);
         return toDto(saved);
     }

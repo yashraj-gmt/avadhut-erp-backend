@@ -2,6 +2,7 @@ package com.erp.system.entity;
 
 import com.erp.system.enums.OrderStatus;
 import com.erp.system.enums.BillingStatus;
+import com.erp.system.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -106,6 +107,15 @@ public class Order extends BaseEntity {
     /** True = diesel provided with owner/company; False = party arranges diesel */
     @Column(name = "with_diesel")
     private Boolean withDiesel = true;
+
+    /** Date by which payment is expected. Defaults to billing creation date + 7 days. Null until billing is first saved. */
+    @Column(name = "payment_due_date")
+    private LocalDate paymentDueDate;
+
+    /** Tracks whether the client has paid. Defaults to PENDING and never auto-changed by existing billing flows. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_status", length = 20)
+    private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
     /** Employee/user responsible for this order */
     @ManyToOne(fetch = FetchType.LAZY)
