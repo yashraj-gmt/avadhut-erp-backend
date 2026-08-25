@@ -19,6 +19,9 @@ public class UpdateOrderBillingRequest {
     @NotNull
     private List<BillingItemRequest> generators;
 
+    /** Optional miscellaneous/other charges (e.g. catering, extra services). */
+    private List<OtherChargeRequest> otherCharges;
+
     @Data
     public static class BillingItemRequest {
         @NotNull
@@ -48,5 +51,14 @@ public class UpdateOrderBillingRequest {
 
         @NotNull
         private BigDecimal duration;
+    }
+
+    @Data
+    public static class OtherChargeRequest {
+        /** Display label for this charge (e.g. "Catering", "Maintenance"). */
+        private String name;
+
+        /** Amount for this charge. */
+        private BigDecimal amount;
     }
 }

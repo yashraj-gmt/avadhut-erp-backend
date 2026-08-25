@@ -31,6 +31,9 @@ public class UpdateGeneratorRequest {
     @Min(value = 0)
     private Integer stockQuantity;
 
+    @Min(value = 0, message = "Under service quantity cannot be negative")
+    private Integer underServiceQuantity;
+
     @Size(max = 200, message = "Product by must not exceed 200 characters")
     private String productBy;
 

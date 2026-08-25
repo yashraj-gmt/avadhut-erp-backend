@@ -7,5 +7,7 @@ public enum OrderStatus {
     READY,
     DISPATCHED,
     DELIVERED,
+    /** Generators physically returned — stock released immediately. Billing may still be pending. */
+    COMPLETED,
     CANCELLED
 }

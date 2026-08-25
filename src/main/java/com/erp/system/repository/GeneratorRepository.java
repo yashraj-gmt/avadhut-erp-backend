@@ -43,6 +43,11 @@ public interface GeneratorRepository extends JpaRepository<Generator, Long> {
     @Query("SELECT MAX(g.id) FROM Generator g")
     Long getMaxId();
 
+    /**
+     * Returns all active order-items that overlap the given date range,
+     * EXCLUDING orders that have been marked as COMPLETED (generators physically returned)
+     * or CANCELLED. This means returned generators immediately re-appear as available.
+     */
     @Query("""
         SELECT oi
         FROM   OrderItem oi
@@ -50,6 +55,7 @@ public interface GeneratorRepository extends JpaRepository<Generator, Long> {
         WHERE  oi.generator IS NOT NULL
         AND    o.deleted = false
         AND    o.orderStatus != com.erp.system.enums.OrderStatus.CANCELLED
+        AND    o.orderStatus != com.erp.system.enums.OrderStatus.COMPLETED
         AND    o.functionDateFrom <= :endDate
         AND    o.functionDateTo >= :startDate
         AND    (:excludeOrderId IS NULL OR o.id != :excludeOrderId)

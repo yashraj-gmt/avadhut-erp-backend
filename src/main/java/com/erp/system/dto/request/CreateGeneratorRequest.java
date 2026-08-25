@@ -33,6 +33,9 @@ public class CreateGeneratorRequest {
     @Min(value = 0, message = "Stock quantity cannot be negative")
     private Integer stockQuantity = 0;
 
+    @Min(value = 0, message = "Under service quantity cannot be negative")
+    private Integer underServiceQuantity = 0;
+
     @Size(max = 200, message = "Product by must not exceed 200 characters")
     private String productBy;
 

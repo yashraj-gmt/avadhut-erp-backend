@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CustomerServiceImpl implements CustomerService {
+public class GeneratorCustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
     private final OrderRepository    orderRepository;
@@ -126,7 +126,7 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     @Transactional(readOnly = true)
     public PagedResponse<CustomerSummaryResponse> searchAndFilter(CustomerFilterRequest filter,
-                                                                   Pageable pageable) {
+                                                                  Pageable pageable) {
         Specification<Customer> spec = CustomerSpecification.from(filter);
         Page<Customer> page = customerRepository.findAll(spec, pageable);
         return PagedResponse.from(page.map(this::toSummaryWithCounts));
@@ -345,11 +345,11 @@ public class CustomerServiceImpl implements CustomerService {
 
         // Resolve config: request body overrides defaults
         int        minOrders       = (config != null && config.getMinOrders()       != null)
-                                     ? config.getMinOrders()       : defaultMinOrders;
+                ? config.getMinOrders()       : defaultMinOrders;
         int        lookbackMonths  = (config != null && config.getLookbackMonths()  != null)
-                                     ? config.getLookbackMonths()  : defaultLookbackMonths;
+                ? config.getLookbackMonths()  : defaultLookbackMonths;
         BigDecimal minTotalSpend   = (config != null && config.getMinTotalSpend()   != null)
-                                     ? config.getMinTotalSpend()   : defaultMinTotalSpend;
+                ? config.getMinTotalSpend()   : defaultMinTotalSpend;
 
         LocalDateTime since = LocalDateTime.now().minusMonths(lookbackMonths);
         List<Customer> customers = customerRepository.findAllActiveForRecalc();
@@ -366,7 +366,7 @@ public class CustomerServiceImpl implements CustomerService {
 
             // Qualifies if EITHER: order count threshold OR spend threshold is met
             boolean qualifies = recentOrders >= minOrders
-                                || totalSpend.compareTo(minTotalSpend) >= 0;
+                    || totalSpend.compareTo(minTotalSpend) >= 0;
 
             boolean wasRegular = Boolean.TRUE.equals(customer.getIsRegular());
 

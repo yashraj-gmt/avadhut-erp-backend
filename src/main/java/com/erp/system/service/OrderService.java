@@ -22,6 +22,14 @@ public interface OrderService {
 
     /** Mark payment for this order as PAID. */
     OrderResponse markPaymentDone(Long id);
+
+    /**
+     * Mark generators for this order as physically returned.
+     * Sets orderStatus = COMPLETED and returnedAt = now().
+     * Stock is immediately released for same-day re-booking.
+     * Billing is NOT affected — it can remain PENDING.
+     */
+    OrderResponse markAsReturned(Long id);
     
     void delete(Long id);
 }

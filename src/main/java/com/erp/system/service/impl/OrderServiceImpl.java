@@ -18,6 +18,8 @@ import com.erp.system.repository.CustomerRepository;
 import com.erp.system.repository.GeneratorRepository;
 import com.erp.system.repository.OrderRepository;
 import com.erp.system.service.OrderService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -75,11 +77,28 @@ public class OrderServiceImpl implements OrderService {
             predicates.add(cb.isFalse(root.get("deleted")));
 
             if (search != null && !search.trim().isEmpty()) {
-                String searchLower = "%" + search.toLowerCase() + "%";
+                String searchLower = "%" + search.toLowerCase().trim() + "%";
                 Predicate orderNum = cb.like(cb.lower(root.get("orderNumber")), searchLower);
-                Predicate custName = cb.like(cb.lower(root.join("customer").get("name")), searchLower);
-                Predicate custMobile = cb.like(cb.lower(root.join("customer").get("mobile")), searchLower);
-                predicates.add(cb.or(orderNum, custName, custMobile));
+                Predicate billNum = cb.like(cb.lower(root.get("billNumber")), searchLower);
+
+                jakarta.persistence.criteria.Join<Object, Object> custJoin = root.join("customer", jakarta.persistence.criteria.JoinType.LEFT);
+                Predicate custName = cb.like(cb.lower(custJoin.get("name")), searchLower);
+                Predicate custMobile = cb.like(cb.lower(custJoin.get("mobile")), searchLower);
+
+                Predicate operatorName = cb.like(cb.lower(root.get("operatorName")), searchLower);
+                jakarta.persistence.criteria.Join<Object, Object> staffJoin = root.join("assignedTo", jakarta.persistence.criteria.JoinType.LEFT);
+                Predicate assignedStaff = cb.like(cb.lower(staffJoin.get("name")), searchLower);
+
+                jakarta.persistence.criteria.Join<Object, Object> itemsJoin = root.join("orderItems", jakarta.persistence.criteria.JoinType.LEFT);
+                Predicate itemProdName = cb.like(cb.lower(itemsJoin.get("productName")), searchLower);
+                jakarta.persistence.criteria.Join<Object, Object> genJoin = itemsJoin.join("generator", jakarta.persistence.criteria.JoinType.LEFT);
+                Predicate genName = cb.like(cb.lower(genJoin.get("name")), searchLower);
+                Predicate genCode = cb.like(cb.lower(genJoin.get("generatorCode")), searchLower);
+
+                predicates.add(cb.or(orderNum, billNum, custName, custMobile, operatorName, assignedStaff, itemProdName, genName, genCode));
+                if (query != null) {
+                    query.distinct(true);
+                }
             }
 
             if (status != null && !status.trim().isEmpty()) {
@@ -386,6 +405,29 @@ public class OrderServiceImpl implements OrderService {
                 .build();
         }).collect(Collectors.toList());
 
+        // Deserialize stored otherCharges JSON back to response list
+        List<OrderResponse.OtherChargeResponse> otherChargeResponses = null;
+        if (o.getOtherCharges() != null && !o.getOtherCharges().isBlank()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                List<java.util.Map<String, Object>> raw = mapper.readValue(
+                    o.getOtherCharges(),
+                    new TypeReference<List<java.util.Map<String, Object>>>() {});
+                otherChargeResponses = raw.stream().map(m -> {
+                    BigDecimal amt = m.get("amount") != null
+                        ? new BigDecimal(m.get("amount").toString())
+                        : BigDecimal.ZERO;
+                    return OrderResponse.OtherChargeResponse.builder()
+                        .name(m.get("name") != null ? m.get("name").toString() : "")
+                        .amount(amt)
+                        .build();
+                }).collect(Collectors.toList());
+            } catch (Exception e) {
+                // If JSON parsing fails, return null (graceful degradation)
+                otherChargeResponses = null;
+            }
+        }
+
         return OrderResponse.builder()
                 .id(o.getId())
                 .orderNumber(o.getOrderNumber())
@@ -411,6 +453,8 @@ public class OrderServiceImpl implements OrderService {
                 .discountAmount(o.getDiscountAmount())
                 .taxAmount(o.getTaxAmount())
                 .finalAmount(o.getFinalAmount())
+                .otherCharges(otherChargeResponses)
+                .returnedAt(o.getReturnedAt())
                 .createdAt(o.getCreatedAt())
                 .updatedAt(o.getUpdatedAt())
                 .generators(items)
@@ -482,7 +526,28 @@ public class OrderServiceImpl implements OrderService {
         }
 
         order.setSubtotal(subtotal);
-        BigDecimal finalAmt = subtotal.subtract(discount).max(BigDecimal.ZERO);
+
+        // Serialize otherCharges list to JSON and persist; also sum into finalAmount
+        BigDecimal otherChargesTotal = BigDecimal.ZERO;
+        if (request.getOtherCharges() != null && !request.getOtherCharges().isEmpty()) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                String json = mapper.writeValueAsString(request.getOtherCharges());
+                order.setOtherCharges(json);
+                for (UpdateOrderBillingRequest.OtherChargeRequest oc : request.getOtherCharges()) {
+                    if (oc.getAmount() != null) {
+                        otherChargesTotal = otherChargesTotal.add(oc.getAmount());
+                    }
+                }
+            } catch (Exception e) {
+                // If JSON serialization fails, persist as-is without other charges
+                order.setOtherCharges(null);
+            }
+        } else {
+            order.setOtherCharges(null);
+        }
+
+        BigDecimal finalAmt = subtotal.add(otherChargesTotal).subtract(discount).max(BigDecimal.ZERO);
         order.setFinalAmount(finalAmt);
 
         // Set paymentDueDate: use supplied value, or default to today + 7 days if not yet set
@@ -523,6 +588,23 @@ public class OrderServiceImpl implements OrderService {
     public OrderResponse markPaymentDone(Long id) {
         Order order = findOrderOrThrow(id);
         order.setPaymentStatus(PaymentStatus.PAID);
+        Order saved = orderRepository.save(order);
+        return toDto(saved);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse markAsReturned(Long id) {
+        Order order = findOrderOrThrow(id);
+        if (order.getOrderStatus() == OrderStatus.COMPLETED) {
+            throw new AppException("Generators for this order are already marked as returned.", HttpStatus.BAD_REQUEST);
+        }
+        if (order.getOrderStatus() == OrderStatus.CANCELLED) {
+            throw new AppException("Cannot mark a cancelled order as returned.", HttpStatus.BAD_REQUEST);
+        }
+        order.setOrderStatus(OrderStatus.COMPLETED);
+        order.setReturnedAt(java.time.LocalDateTime.now());
+        log.info("Order {} marked as returned — generator stock released", order.getOrderNumber());
         Order saved = orderRepository.save(order);
         return toDto(saved);
     }

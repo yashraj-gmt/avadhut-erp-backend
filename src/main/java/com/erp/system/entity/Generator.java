@@ -55,4 +55,12 @@ public class Generator extends BaseEntity {
 
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
+
+    /**
+     * Number of units currently under service / not working.
+     * These units are excluded from the bookable available stock.
+     * Bookable = stockQuantity - underServiceQuantity - currentlyBooked
+     */
+    @Column(name = "under_service_quantity", nullable = false)
+    private Integer underServiceQuantity = 0;
 }

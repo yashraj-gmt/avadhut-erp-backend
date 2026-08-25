@@ -47,6 +47,12 @@ public class OrderResponse {
     private BigDecimal discountAmount;
     private BigDecimal taxAmount;
     private BigDecimal finalAmount;
+
+    /** Optional miscellaneous/other charges saved alongside this order's billing. */
+    private List<OtherChargeResponse> otherCharges;
+
+    /** Timestamp when generators were marked as returned (stock released). Null if not yet returned. */
+    private LocalDateTime returnedAt;
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -83,4 +89,12 @@ public class OrderResponse {
         private LocalTime endTime;
         private BigDecimal duration;
     }
+
+    @Data
+    @Builder
+    public static class OtherChargeResponse {
+        private String name;
+        private BigDecimal amount;
+    }
 }
+

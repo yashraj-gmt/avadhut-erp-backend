@@ -22,6 +22,10 @@ public class GeneratorResponse {
     private BigDecimal withDieselRentPrice;
     private Integer    stockQuantity;
     private Integer    availableStock;
+    /** Units currently under service / not working (excluded from bookable stock). */
+    private Integer    underServiceQuantity;
+    /** Effective bookable stock = stockQuantity - underServiceQuantity (before date-based deduction). */
+    private Integer    effectiveStock;
     private String     productBy;
     private String     imageUrl;
     private String     description;

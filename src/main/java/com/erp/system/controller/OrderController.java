@@ -93,6 +93,12 @@ public class OrderController {
         return ResponseEntity.ok(ApiResponse.success("Payment marked as done.", data));
     }
 
+    @PostMapping("/{id}/mark-returned")
+    public ResponseEntity<ApiResponse<OrderResponse>> markAsReturned(@PathVariable Long id) {
+        OrderResponse data = orderService.markAsReturned(id);
+        return ResponseEntity.ok(ApiResponse.success("Generators marked as returned. Stock released successfully.", data));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         orderService.delete(id);

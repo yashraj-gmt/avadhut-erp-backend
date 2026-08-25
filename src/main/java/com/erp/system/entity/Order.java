@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -116,6 +117,22 @@ public class Order extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status", length = 20)
     private PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+    /**
+     * Optional miscellaneous charges stored as JSON array string.
+     * Format: [{"name":"Catering","amount":500.00}, ...]
+     * Null/empty means no other charges.
+     */
+    @Column(name = "other_charges", columnDefinition = "TEXT")
+    private String otherCharges;
+
+    /**
+     * Timestamp when the generators for this order were marked as physically returned.
+     * Once set, these generator units are excluded from booked-stock calculations,
+     * allowing same-day re-booking. Billing workflow is unaffected.
+     */
+    @Column(name = "returned_at")
+    private LocalDateTime returnedAt;
 
     /** Employee/user responsible for this order */
     @ManyToOne(fetch = FetchType.LAZY)

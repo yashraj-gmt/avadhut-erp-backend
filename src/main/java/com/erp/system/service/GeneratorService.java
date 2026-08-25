@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 public interface GeneratorService {
 
@@ -25,4 +26,16 @@ public interface GeneratorService {
     void delete(Long id);
 
     List<GeneratorResponse> getForDropdownWithAvailability(LocalDate startDate, LocalDate endDate, Long excludeOrderId);
+
+    /**
+     * Returns a per-date availability breakdown for a single generator.
+     * Each entry in the returned list contains:
+     *   date, totalStock, underServiceQty, bookedQty, availableQty
+     */
+    List<Map<String, Object>> getDailyAvailability(Long generatorId, LocalDate startDate, LocalDate endDate);
+
+    /**
+     * Returns availability breakdown for all active generators for a specific date.
+     */
+    List<Map<String, Object>> getDailyAvailabilityAll(LocalDate date);
 }
