@@ -1,7 +1,6 @@
 package com.erp.system.dto.response;
 
 import com.erp.system.enums.CustomerStatus;
-import com.erp.system.enums.CustomerType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
@@ -22,19 +21,18 @@ public class CustomerResponse {
 
     private Long           id;
     private String         name;
+    private String         firmName;
     private String         mobile;
     private String         alternateMobile;
     private String         email;
     private String         address;
-    private String         city;
-    private String         area;
-    private String         pincode;
-    private CustomerType   customerType;
+    private String         addressLocationLink;
     private CustomerStatus customerStatus;
     private Boolean        isActive;
     private Boolean        isRegular;
     private LocalDate      regularSince;
     private LocalDate      dateJoined;
+    private String         remarks;
     private String         notes;
 
     // -- Computed aggregates (populated by service) --

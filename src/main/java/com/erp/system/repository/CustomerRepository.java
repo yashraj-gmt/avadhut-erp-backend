@@ -14,6 +14,9 @@ public interface CustomerRepository
         extends JpaRepository<Customer, Long>, JpaSpecificationExecutor<Customer> {
     boolean existsByMobile(String mobile);
 
+    boolean existsByNameIgnoreCaseAndDeletedFalse(String name);
+    boolean existsByNameIgnoreCaseAndIdNotAndDeletedFalse(String name, Long id);
+
     java.util.Optional<Customer> findFirstByMobile(String mobile);
     java.util.Optional<Customer> findFirstByNameAndMobile(String name, String mobile);
 

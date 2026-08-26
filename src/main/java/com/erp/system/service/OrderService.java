@@ -23,6 +23,12 @@ public interface OrderService {
     /** Mark payment for this order as PAID. */
     OrderResponse markPaymentDone(Long id);
 
+    /** Record a full or partial payment against this order with payment history. */
+    com.erp.system.dto.response.PaymentSummaryDto recordPayment(Long id, com.erp.system.dto.request.RecordPaymentRequest request);
+
+    /** Get all payments recorded against this order. */
+    java.util.List<com.erp.system.dto.response.PaymentSummaryDto> getOrderPayments(Long id);
+
     /**
      * Mark generators for this order as physically returned.
      * Sets orderStatus = COMPLETED and returnedAt = now().

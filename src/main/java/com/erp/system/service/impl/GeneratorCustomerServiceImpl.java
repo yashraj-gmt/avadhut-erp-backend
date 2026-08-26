@@ -58,9 +58,10 @@ public class GeneratorCustomerServiceImpl implements CustomerService {
     @Transactional
     public CustomerResponse create(CreateCustomerRequest request) {
 
-        if (customerRepository.existsByMobile(request.getMobile())) {
+        String trimmedName = request.getName() != null ? request.getName().trim() : "";
+        if (customerRepository.existsByNameIgnoreCaseAndDeletedFalse(trimmedName)) {
             throw new AppException(
-                    "A customer with mobile '" + request.getMobile() + "' already exists.",
+                    "A customer with name '" + request.getName() + "' already exists.",
                     HttpStatus.CONFLICT
             );
         }
@@ -79,11 +80,11 @@ public class GeneratorCustomerServiceImpl implements CustomerService {
 
         Customer customer = findOrThrow(id);
 
-        if (request.getMobile() != null
-                && !request.getMobile().equals(customer.getMobile())
-                && customerRepository.existsByMobileAndIdNot(request.getMobile(), id)) {
+        if (request.getName() != null
+                && !request.getName().trim().equalsIgnoreCase(customer.getName())
+                && customerRepository.existsByNameIgnoreCaseAndIdNotAndDeletedFalse(request.getName().trim(), id)) {
             throw new AppException(
-                    "Mobile '" + request.getMobile() + "' is already registered to another customer.",
+                    "A customer with name '" + request.getName() + "' already exists.",
                     HttpStatus.CONFLICT
             );
         }
@@ -140,29 +141,41 @@ public class GeneratorCustomerServiceImpl implements CustomerService {
 
         Customer customer = findOrThrow(id);
 
-        // Fetch recent orders/invoices (limit 10 each for the summary)
-        List<Order>   recentOrders   = orderRepository.findTopByCustomerId(id, 10);
+        // Fetch customer orders with payments initialized
+        List<Order> customerOrders = orderRepository.findAllByCustomerIdWithPayments(id);
         List<Invoice> recentInvoices = invoiceRepository.findTopByCustomerId(id, 10);
 
-        BigDecimal totalInvoiceAmount = invoiceRepository.sumFinalAmountByCustomerId(id);
-        BigDecimal totalPaidAmount    = invoiceRepository.sumPaidAmountByCustomerId(id);
-        BigDecimal outstandingDues    = totalInvoiceAmount.subtract(totalPaidAmount);
+        long totalOrders            = customerOrders.size();
+        long completedOrders        = customerOrders.stream().filter(o -> o.getOrderStatus() == com.erp.system.enums.OrderStatus.COMPLETED).count();
+        long paidOrders             = customerOrders.stream().filter(o -> o.getPaymentStatus() == com.erp.system.enums.PaymentStatus.PAID).count();
+        long pendingPaymentOrders   = customerOrders.stream().filter(o -> o.getPaymentStatus() != com.erp.system.enums.PaymentStatus.PAID && o.getFinalAmount() != null && o.getFinalAmount().compareTo(BigDecimal.ZERO) > 0).count();
 
-        long totalOrders   = orderRepository.countByCustomerIdAndDeletedFalse(id);
-        long totalInvoices = recentInvoices.size(); // approximate; replace with count query if needed
+        BigDecimal totalBusinessValue = customerOrders.stream()
+                .map(o -> o.getFinalAmount() != null ? o.getFinalAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal totalPaidAmount = customerOrders.stream()
+                .map(o -> o.getPaidAmount() != null ? o.getPaidAmount() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal outstandingDues = totalBusinessValue.subtract(totalPaidAmount);
 
         CustomerProfileResponse profile = customerMapper.toProfileResponse(customer);
-        profile.setRecentOrders(recentOrders.stream().map(customerMapper::toOrderSummary).toList());
+        profile.setRecentOrders(customerOrders.stream().map(customerMapper::toOrderSummary).toList());
         profile.setRecentInvoices(recentInvoices.stream().map(customerMapper::toInvoiceSummary).toList());
         profile.setTotalOrders(totalOrders);
-        profile.setTotalInvoices(totalInvoices);
-        profile.setTotalBusinessValue(totalInvoiceAmount);
+        profile.setCompletedOrders(completedOrders);
+        profile.setPendingPaymentOrders(pendingPaymentOrders);
+        profile.setPaidOrders(paidOrders);
+        profile.setTotalInvoices((long) recentInvoices.size());
+        profile.setTotalBusinessValue(totalBusinessValue);
         profile.setTotalPaidAmount(totalPaidAmount);
         profile.setOutstandingDues(outstandingDues.compareTo(BigDecimal.ZERO) < 0
                 ? BigDecimal.ZERO : outstandingDues);
 
         return profile;
     }
+
 
     // ── Area-wise ─────────────────────────────────────────────────────────
 
@@ -404,19 +417,25 @@ public class GeneratorCustomerServiceImpl implements CustomerService {
 
     private void applyCreateFields(Customer customer, CreateCustomerRequest req) {
         customer.setName(req.getName().trim());
+        if (req.getFirmName()            != null) customer.setFirmName(req.getFirmName().trim());
         customer.setMobile(req.getMobile().trim());
         customer.setAlternateMobile(req.getAlternateMobile());
         customer.setEmail(req.getEmail());
         customer.setAddress(req.getAddress());
-        customer.setCity(req.getCity());
-        customer.setArea(req.getArea());
-        customer.setPincode(req.getPincode());
-        customer.setCustomerType(req.getCustomerType());
+        customer.setAddressLocationLink(req.getAddressLocationLink());
+        customer.setRemarks(req.getRemarks());
         customer.setNotes(req.getNotes());
+        if (req.getIsRegular() != null) {
+            customer.setIsRegular(req.getIsRegular());
+            if (Boolean.TRUE.equals(req.getIsRegular())) {
+                customer.setRegularSince(LocalDate.now());
+            }
+        }
         if (req.getDateJoined() != null) {
             customer.setDateJoined(req.getDateJoined());
         }
     }
+
 
     /** Maps Customer → CustomerResponse and enriches with computed aggregates. */
     private CustomerResponse enrichDetailResponse(Customer customer) {

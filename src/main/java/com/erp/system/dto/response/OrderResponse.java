@@ -47,12 +47,17 @@ public class OrderResponse {
     private BigDecimal discountAmount;
     private BigDecimal taxAmount;
     private BigDecimal finalAmount;
+    private BigDecimal paidAmount;
+    private BigDecimal pendingAmount;
+    private LocalDate  paymentCompletionDate;
 
     /** Optional miscellaneous/other charges saved alongside this order's billing. */
     private List<OtherChargeResponse> otherCharges;
 
     /** Timestamp when generators were marked as returned (stock released). Null if not yet returned. */
     private LocalDateTime returnedAt;
+
+    private List<PaymentSummaryDto> payments;
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

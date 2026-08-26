@@ -34,6 +34,9 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Object[]> findLastPaymentDatesByCustomerIds(
             @Param("customerIds") List<Long> customerIds);
 
+    /** All payments for an order ordered chronologically. */
+    List<Payment> findByOrderIdOrderByPaymentDateDescCreatedAtDesc(Long orderId);
+
     /** All payments for a customer ordered chronologically — for history timeline. */
     @Query("""
         SELECT p FROM Payment p

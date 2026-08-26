@@ -13,10 +13,8 @@ import java.util.List;
 @Table(
     name = "customers",
     indexes = {
+        @Index(name = "idx_customers_name",       columnList = "name"),
         @Index(name = "idx_customers_mobile",     columnList = "mobile"),
-        @Index(name = "idx_customers_area",       columnList = "area"),
-        @Index(name = "idx_customers_type",       columnList = "customer_type"),
-        @Index(name = "idx_customers_city",       columnList = "city"),
         @Index(name = "idx_customers_active",     columnList = "is_active"),
         @Index(name = "idx_customers_regular",    columnList = "is_regular"),
         @Index(name = "idx_customers_status",     columnList = "customer_status"),
@@ -47,9 +45,19 @@ public class Customer extends BaseEntity {
     @Column(name = "email", length = 100)
     private String email;
 
+    /** Firm / Company name (optional) */
+    @Column(name = "firm_name", length = 150)
+    private String firmName;
+
+    /** Site / installation address — replaces old billing address */
     @Column(name = "address", length = 500)
     private String address;
 
+    /** Google Maps or location link for the site address */
+    @Column(name = "address_location_link", length = 500)
+    private String addressLocationLink;
+
+    // ── Legacy fields kept for DB backward-compat with Orders/Invoices ──
     @Column(name = "city", length = 100)
     private String city;
 
@@ -67,6 +75,10 @@ public class Customer extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "customer_status", nullable = false, length = 20)
     private CustomerStatus customerStatus = CustomerStatus.ACTIVE;
+
+    /** Remarks / special instructions about this customer */
+    @Column(name = "remarks", columnDefinition = "TEXT")
+    private String remarks;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;

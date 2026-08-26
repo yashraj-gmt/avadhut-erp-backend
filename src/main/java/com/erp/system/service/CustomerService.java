@@ -85,4 +85,5 @@ public interface CustomerService {
      * When {@code config} is null, property defaults are used.
      */
     RegularCustomerRecalcResult recalculateRegularCustomers(RegularCustomerConfigRequest config);
+
 }

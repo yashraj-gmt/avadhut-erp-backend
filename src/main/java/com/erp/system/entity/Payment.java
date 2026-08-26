@@ -11,6 +11,7 @@ import java.time.LocalDate;
 @Table(
     name = "payments",
     indexes = {
+        @Index(name = "idx_pay_order_id",     columnList = "order_id"),
         @Index(name = "idx_pay_invoice_id",   columnList = "invoice_id"),
         @Index(name = "idx_pay_customer_id",  columnList = "customer_id"),
         @Index(name = "idx_pay_date",         columnList = "payment_date"),
@@ -28,8 +29,12 @@ public class Payment extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "invoice_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id")
+    private Order order;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "invoice_id")
     private Invoice invoice;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -44,7 +49,7 @@ public class Payment extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_mode", nullable = false, length = 20)
-    private PaymentMode paymentMode;
+    private PaymentMode paymentMode = PaymentMode.CASH;
 
     @Column(name = "payment_date", nullable = false)
     private LocalDate paymentDate;

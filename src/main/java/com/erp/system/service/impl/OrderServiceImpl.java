@@ -45,6 +45,8 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
     private final GeneratorRepository generatorRepository;
+    private final com.erp.system.repository.PaymentRepository paymentRepository;
+    private final com.erp.system.mapper.CustomerMapper customerMapper;
 
     @Override
     @Transactional
@@ -453,8 +455,12 @@ public class OrderServiceImpl implements OrderService {
                 .discountAmount(o.getDiscountAmount())
                 .taxAmount(o.getTaxAmount())
                 .finalAmount(o.getFinalAmount())
+                .paidAmount(o.getPaidAmount() != null ? o.getPaidAmount() : BigDecimal.ZERO)
+                .pendingAmount(o.getPendingAmount() != null ? o.getPendingAmount() : (o.getFinalAmount() != null ? o.getFinalAmount() : BigDecimal.ZERO))
+                .paymentCompletionDate(o.getPaymentCompletionDate())
                 .otherCharges(otherChargeResponses)
                 .returnedAt(o.getReturnedAt())
+                .payments(o.getPayments() != null ? o.getPayments().stream().map(customerMapper::toPaymentSummary).toList() : null)
                 .createdAt(o.getCreatedAt())
                 .updatedAt(o.getUpdatedAt())
                 .generators(items)
@@ -550,6 +556,15 @@ public class OrderServiceImpl implements OrderService {
         BigDecimal finalAmt = subtotal.add(otherChargesTotal).subtract(discount).max(BigDecimal.ZERO);
         order.setFinalAmount(finalAmt);
 
+        BigDecimal currentPaid = order.getPaidAmount() != null ? order.getPaidAmount() : BigDecimal.ZERO;
+        BigDecimal newPending = finalAmt.subtract(currentPaid).max(BigDecimal.ZERO);
+        order.setPendingAmount(newPending);
+        if (newPending.compareTo(BigDecimal.ZERO) == 0 && finalAmt.compareTo(BigDecimal.ZERO) > 0 && currentPaid.compareTo(BigDecimal.ZERO) > 0) {
+            order.setPaymentStatus(PaymentStatus.PAID);
+        } else if (currentPaid.compareTo(BigDecimal.ZERO) > 0) {
+            order.setPaymentStatus(PaymentStatus.PARTIAL_PAID);
+        }
+
         // Set paymentDueDate: use supplied value, or default to today + 7 days if not yet set
         if (request.getPaymentDueDate() != null) {
             order.setPaymentDueDate(request.getPaymentDueDate());
@@ -587,9 +602,78 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponse markPaymentDone(Long id) {
         Order order = findOrderOrThrow(id);
+        BigDecimal finalAmt = order.getFinalAmount() != null ? order.getFinalAmount() : BigDecimal.ZERO;
+        BigDecimal currentPaid = order.getPaidAmount() != null ? order.getPaidAmount() : BigDecimal.ZERO;
+        BigDecimal remaining = finalAmt.subtract(currentPaid);
+
+        LocalDate today = LocalDate.now();
+        if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+            com.erp.system.entity.Payment payment = new com.erp.system.entity.Payment();
+            payment.setOrder(order);
+            payment.setCustomer(order.getCustomer());
+            payment.setAmount(remaining);
+            payment.setPendingAfterPayment(BigDecimal.ZERO);
+            payment.setPaymentMode(com.erp.system.enums.PaymentMode.CASH);
+            payment.setPaymentDate(today);
+            payment.setNotes("Marked as paid in full");
+            paymentRepository.save(payment);
+        }
+
+        order.setPaidAmount(finalAmt);
+        order.setPendingAmount(BigDecimal.ZERO);
         order.setPaymentStatus(PaymentStatus.PAID);
+        order.setPaymentCompletionDate(today);
         Order saved = orderRepository.save(order);
         return toDto(saved);
+    }
+
+    @Override
+    @Transactional
+    public com.erp.system.dto.response.PaymentSummaryDto recordPayment(Long id, com.erp.system.dto.request.RecordPaymentRequest request) {
+        Order order = findOrderOrThrow(id);
+        BigDecimal paymentAmt = request.getAmount();
+        if (paymentAmt == null || paymentAmt.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new AppException("Payment amount must be greater than zero.", HttpStatus.BAD_REQUEST);
+        }
+
+        BigDecimal currentPaid = order.getPaidAmount() != null ? order.getPaidAmount() : BigDecimal.ZERO;
+        BigDecimal newPaid = currentPaid.add(paymentAmt);
+        BigDecimal finalAmt = order.getFinalAmount() != null ? order.getFinalAmount() : BigDecimal.ZERO;
+        BigDecimal newPending = finalAmt.subtract(newPaid).max(BigDecimal.ZERO);
+
+        LocalDate paymentDate = request.getPaymentDate() != null ? request.getPaymentDate() : LocalDate.now();
+
+        com.erp.system.entity.Payment payment = new com.erp.system.entity.Payment();
+        payment.setOrder(order);
+        payment.setCustomer(order.getCustomer());
+        payment.setAmount(paymentAmt);
+        payment.setPendingAfterPayment(newPending);
+        payment.setPaymentMode(request.getPaymentMode() != null ? request.getPaymentMode() : com.erp.system.enums.PaymentMode.CASH);
+        payment.setPaymentDate(paymentDate);
+        payment.setTransactionReference(request.getTransactionReference());
+        payment.setNotes(request.getNotes());
+
+        com.erp.system.entity.Payment savedPayment = paymentRepository.save(payment);
+
+        order.setPaidAmount(newPaid);
+        order.setPendingAmount(newPending);
+        if (newPending.compareTo(BigDecimal.ZERO) <= 0) {
+            order.setPaymentStatus(PaymentStatus.PAID);
+            order.setPaymentCompletionDate(paymentDate);
+        } else {
+            order.setPaymentStatus(PaymentStatus.PARTIAL_PAID);
+        }
+        orderRepository.save(order);
+
+        log.info("Recorded payment of ₹{} for Order #{}. New pending: ₹{}", paymentAmt, order.getOrderNumber(), newPending);
+        return customerMapper.toPaymentSummary(savedPayment);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.erp.system.dto.response.PaymentSummaryDto> getOrderPayments(Long id) {
+        List<com.erp.system.entity.Payment> payments = paymentRepository.findByOrderIdOrderByPaymentDateDescCreatedAtDesc(id);
+        return payments.stream().map(customerMapper::toPaymentSummary).toList();
     }
 
     @Override

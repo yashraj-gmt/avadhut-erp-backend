@@ -40,7 +40,7 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
 
     /**
      * Sum of finalAmount across all non-deleted orders for a customer —
-     * used as an alternative qualifying threshold for the regular algorithm.
+     * used as total business value.
      */
     @Query("""
         SELECT COALESCE(SUM(o.finalAmount), 0)
@@ -49,6 +49,64 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
         AND    o.deleted = false
         """)
     BigDecimal sumFinalAmountByCustomerId(@Param("customerId") Long customerId);
+
+    /**
+     * Sum of paidAmount across all non-deleted orders for a customer.
+     */
+    @Query("""
+        SELECT COALESCE(SUM(o.paidAmount), 0)
+        FROM   Order o
+        WHERE  o.customer.id = :customerId
+        AND    o.deleted = false
+        """)
+    BigDecimal sumPaidAmountByCustomerId(@Param("customerId") Long customerId);
+
+    /**
+     * Count of completed orders for a customer.
+     */
+    @Query("""
+        SELECT COUNT(o)
+        FROM   Order o
+        WHERE  o.customer.id = :customerId
+        AND    o.deleted = false
+        AND    o.orderStatus = 'COMPLETED'
+        """)
+    long countCompletedOrdersByCustomerId(@Param("customerId") Long customerId);
+
+    /**
+     * Count of orders with pending or partial payments for a customer.
+     */
+    @Query("""
+        SELECT COUNT(o)
+        FROM   Order o
+        WHERE  o.customer.id = :customerId
+        AND    o.deleted = false
+        AND    o.finalAmount > 0
+        AND    (o.paymentStatus IS NULL OR o.paymentStatus != 'PAID')
+        """)
+    long countPendingPaymentOrdersByCustomerId(@Param("customerId") Long customerId);
+
+    /**
+     * Count of fully paid orders for a customer.
+     */
+    @Query("""
+        SELECT COUNT(o)
+        FROM   Order o
+        WHERE  o.customer.id = :customerId
+        AND    o.deleted = false
+        AND    o.paymentStatus = 'PAID'
+        """)
+    long countPaidOrdersByCustomerId(@Param("customerId") Long customerId);
+
+    /** All orders for a customer ordered by createdAt descending with payments initialized. */
+    @Query("""
+        SELECT DISTINCT o FROM Order o
+        LEFT JOIN FETCH o.payments
+        WHERE  o.customer.id = :customerId
+        AND    o.deleted = false
+        ORDER BY o.createdAt DESC
+        """)
+    List<Order> findAllByCustomerIdWithPayments(@Param("customerId") Long customerId);
 
     /** Latest N orders for profile summary. */
     @Query("""

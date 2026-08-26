@@ -1,7 +1,6 @@
 package com.erp.system.dto.response;
 
 import com.erp.system.enums.CustomerStatus;
-import com.erp.system.enums.CustomerType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
@@ -21,10 +20,8 @@ public class CustomerSummaryResponse {
 
     private Long           id;
     private String         name;
+    private String         firmName;
     private String         mobile;
-    private String         area;
-    private String         city;
-    private CustomerType   customerType;
     private CustomerStatus customerStatus;
     private Boolean        isActive;
     private Boolean        isRegular;

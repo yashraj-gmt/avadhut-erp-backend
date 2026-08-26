@@ -1,6 +1,5 @@
 package com.erp.system.dto.request;
 
-import com.erp.system.enums.CustomerType;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
@@ -17,6 +16,9 @@ public class CreateCustomerRequest {
     @Size(max = 100, message = "Name must not exceed 100 characters.")
     private String name;
 
+    @Size(max = 150, message = "Firm name must not exceed 150 characters.")
+    private String firmName;
+
     @NotBlank(message = "Mobile number is required.")
     @Pattern(regexp = "^[6-9]\\d{9}$", message = "Mobile must be a valid 10-digit Indian number.")
     private String mobile;
@@ -28,21 +30,21 @@ public class CreateCustomerRequest {
     @Size(max = 100, message = "Email must not exceed 100 characters.")
     private String email;
 
+    /** Site / installation address */
     @Size(max = 500, message = "Address must not exceed 500 characters.")
     private String address;
 
-    @Size(max = 100, message = "City must not exceed 100 characters.")
-    private String city;
+    /** Google Maps or location link for site address */
+    @Size(max = 500, message = "Location link must not exceed 500 characters.")
+    private String addressLocationLink;
 
-    @Size(max = 100, message = "Area must not exceed 100 characters.")
-    private String area;
-
-    @Pattern(regexp = "^\\d{6}$", message = "Pincode must be a 6-digit number.")
-    private String pincode;
-
-    private CustomerType customerType;
+    /** Remarks / special instructions */
+    private String remarks;
 
     private String notes;
+
+    /** Manually mark as regular customer */
+    private Boolean isRegular;
 
     /**
      * Optional explicit join date; defaults to today if null.

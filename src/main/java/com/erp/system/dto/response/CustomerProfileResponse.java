@@ -1,7 +1,6 @@
 package com.erp.system.dto.response;
 
 import com.erp.system.enums.CustomerStatus;
-import com.erp.system.enums.CustomerType;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
@@ -11,8 +10,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Rich profile response: basic info + linked orders/invoices summary
- * + total business value + outstanding dues.
+ * Rich profile response: basic info + linked orders summary
+ * + order counts (completed, pending payments) + total business value + outstanding dues.
  */
 @Getter
 @Setter
@@ -25,19 +24,18 @@ public class CustomerProfileResponse {
     // -- Basic Info --
     private Long           id;
     private String         name;
+    private String         firmName;
     private String         mobile;
     private String         alternateMobile;
     private String         email;
     private String         address;
-    private String         city;
-    private String         area;
-    private String         pincode;
-    private CustomerType   customerType;
+    private String         addressLocationLink;
     private CustomerStatus customerStatus;
     private Boolean        isActive;
     private Boolean        isRegular;
     private LocalDate      regularSince;
     private LocalDate      dateJoined;
+    private String         remarks;
     private String         notes;
 
     // -- Linked summaries --
@@ -46,12 +44,15 @@ public class CustomerProfileResponse {
 
     // -- Aggregates --
     private Long       totalOrders;
+    private Long       completedOrders;
+    private Long       pendingPaymentOrders;
+    private Long       paidOrders;
     private Long       totalInvoices;
 
-    /** Sum of finalAmount across all invoices (gross business value). */
+    /** Sum of finalAmount across all orders (gross business value). */
     private BigDecimal totalBusinessValue;
 
-    /** Sum of paidAmount across all invoices. */
+    /** Sum of paidAmount across all orders. */
     private BigDecimal totalPaidAmount;
 
     /** totalBusinessValue - totalPaidAmount */

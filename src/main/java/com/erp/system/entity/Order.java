@@ -118,6 +118,18 @@ public class Order extends BaseEntity {
     @Column(name = "payment_status", length = 20)
     private PaymentStatus paymentStatus = PaymentStatus.PENDING;
 
+    /** Cumulative amount paid by customer for this order (supports partial payments) */
+    @Column(name = "paid_amount", precision = 15, scale = 2)
+    private BigDecimal paidAmount = BigDecimal.ZERO;
+
+    /** Remaining pending balance = finalAmount - paidAmount */
+    @Column(name = "pending_amount", precision = 15, scale = 2)
+    private BigDecimal pendingAmount = BigDecimal.ZERO;
+
+    /** Date when the payment was completed in full (null if pending/partial) */
+    @Column(name = "payment_completion_date")
+    private LocalDate paymentCompletionDate;
+
     /**
      * Optional miscellaneous charges stored as JSON array string.
      * Format: [{"name":"Catering","amount":500.00}, ...]
@@ -161,7 +173,25 @@ public class Order extends BaseEntity {
     @OneToMany(mappedBy = "order", fetch = FetchType.LAZY)
     private List<Invoice> invoices = new ArrayList<>();
 
+    @OneToMany(
+        mappedBy = "order",
+        cascade = CascadeType.ALL,
+        fetch = FetchType.LAZY
+    )
+    @OrderBy("paymentDate DESC, createdAt DESC")
+    private List<Payment> payments = new ArrayList<>();
+
     // -- Helper methods --
+
+    public BigDecimal getPaidAmount() {
+        return paidAmount != null ? paidAmount : BigDecimal.ZERO;
+    }
+
+    public BigDecimal getPendingAmount() {
+        if (pendingAmount != null) return pendingAmount;
+        if (finalAmount != null) return finalAmount.subtract(getPaidAmount()).max(BigDecimal.ZERO);
+        return BigDecimal.ZERO;
+    }
 
     public void addItem(OrderItem item) {
         item.setOrder(this);

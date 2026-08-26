@@ -7,10 +7,10 @@ import com.erp.system.entity.Invoice;
 import com.erp.system.entity.Order;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 /**
  * Manual mapper for Customer entities → DTOs.
- * Temporary plain-Spring implementation replacing the MapStruct abstract class
- * until the annotation-processor code-generation issue is resolved.
  */
 @Component
 public class CustomerMapper {
@@ -22,10 +22,8 @@ public class CustomerMapper {
         return CustomerSummaryResponse.builder()
                 .id(c.getId())
                 .name(c.getName())
+                .firmName(c.getFirmName())
                 .mobile(c.getMobile())
-                .area(c.getArea())
-                .city(c.getCity())
-                .customerType(c.getCustomerType())
                 .customerStatus(c.getCustomerStatus())
                 .isActive(c.getIsActive())
                 .isRegular(c.getIsRegular())
@@ -42,19 +40,18 @@ public class CustomerMapper {
         return CustomerResponse.builder()
                 .id(c.getId())
                 .name(c.getName())
+                .firmName(c.getFirmName())
                 .mobile(c.getMobile())
                 .alternateMobile(c.getAlternateMobile())
                 .email(c.getEmail())
                 .address(c.getAddress())
-                .city(c.getCity())
-                .area(c.getArea())
-                .pincode(c.getPincode())
-                .customerType(c.getCustomerType())
+                .addressLocationLink(c.getAddressLocationLink())
                 .customerStatus(c.getCustomerStatus())
                 .isActive(c.getIsActive())
                 .isRegular(c.getIsRegular())
                 .regularSince(c.getRegularSince())
                 .dateJoined(c.getDateJoined())
+                .remarks(c.getRemarks())
                 .notes(c.getNotes())
                 .createdAt(c.getCreatedAt())
                 .updatedAt(c.getUpdatedAt())
@@ -69,19 +66,18 @@ public class CustomerMapper {
         return CustomerProfileResponse.builder()
                 .id(c.getId())
                 .name(c.getName())
+                .firmName(c.getFirmName())
                 .mobile(c.getMobile())
                 .alternateMobile(c.getAlternateMobile())
                 .email(c.getEmail())
                 .address(c.getAddress())
-                .city(c.getCity())
-                .area(c.getArea())
-                .pincode(c.getPincode())
-                .customerType(c.getCustomerType())
+                .addressLocationLink(c.getAddressLocationLink())
                 .customerStatus(c.getCustomerStatus())
                 .isActive(c.getIsActive())
                 .isRegular(c.getIsRegular())
                 .regularSince(c.getRegularSince())
                 .dateJoined(c.getDateJoined())
+                .remarks(c.getRemarks())
                 .notes(c.getNotes())
                 .createdAt(c.getCreatedAt())
                 .updatedAt(c.getUpdatedAt())
@@ -89,19 +85,68 @@ public class CustomerMapper {
                 .build();
     }
 
+
     // ── Order → OrderSummaryDto ───────────────────────────────────────────
 
     public OrderSummaryDto toOrderSummary(Order o) {
         if (o == null) return null;
+
+        String functionDate = "";
+        if (o.getFunctionDateFrom() != null && o.getFunctionDateTo() != null) {
+            functionDate = o.getFunctionDateFrom() + " to " + o.getFunctionDateTo();
+        } else if (o.getDeliveryDate() != null) {
+            functionDate = o.getDeliveryDate().toString();
+        }
+
+        List<PaymentSummaryDto> paymentDtos = null;
+        if (o.getPayments() != null) {
+            paymentDtos = o.getPayments().stream()
+                    .map(this::toPaymentSummary)
+                    .toList();
+        }
+
         return OrderSummaryDto.builder()
                 .id(o.getId())
                 .orderNumber(o.getOrderNumber())
+                .billNumber(o.getBillNumber())
                 .orderStatus(o.getOrderStatus())
-                .finalAmount(o.getFinalAmount())
+                .billingStatus(o.getBillingStatus())
                 .deliveryDate(o.getDeliveryDate())
+                .functionDateFrom(o.getFunctionDateFrom())
+                .functionDateTo(o.getFunctionDateTo())
+                .functionDate(functionDate)
+                .siteAddress(o.getSiteAddress())
+                .siteAddressLink(o.getSiteAddressLink())
+                .subtotal(o.getSubtotal())
+                .discountAmount(o.getDiscountAmount())
+                .taxAmount(o.getTaxAmount())
+                .finalAmount(o.getFinalAmount())
+                .paidAmount(o.getPaidAmount() != null ? o.getPaidAmount() : java.math.BigDecimal.ZERO)
+                .pendingAmount(o.getPendingAmount() != null ? o.getPendingAmount() : o.getFinalAmount())
+                .paymentStatus(o.getPaymentStatus())
+                .paymentCompletionDate(o.getPaymentCompletionDate())
+                .paymentDueDate(o.getPaymentDueDate())
+                .payments(paymentDtos)
                 .createdAt(o.getCreatedAt())
                 .build();
     }
+
+    public PaymentSummaryDto toPaymentSummary(com.erp.system.entity.Payment p) {
+        if (p == null) return null;
+        return PaymentSummaryDto.builder()
+                .id(p.getId())
+                .orderId(p.getOrder() != null ? p.getOrder().getId() : null)
+                .amount(p.getAmount())
+                .pendingAfterPayment(p.getPendingAfterPayment())
+                .paymentMode(p.getPaymentMode())
+                .paymentDate(p.getPaymentDate())
+                .transactionReference(p.getTransactionReference())
+                .notes(p.getNotes())
+                .collectedByName(p.getCollectedBy() != null ? p.getCollectedBy().getName() : null)
+                .createdAt(p.getCreatedAt())
+                .build();
+    }
+
 
     // ── Invoice → InvoiceSummaryDto ───────────────────────────────────────
 
@@ -123,18 +168,18 @@ public class CustomerMapper {
 
     public void applyUpdate(UpdateCustomerRequest req, Customer customer) {
         if (req == null) return;
-        if (req.getName()            != null) customer.setName(req.getName().trim());
-        if (req.getMobile()          != null) customer.setMobile(req.getMobile().trim());
-        if (req.getAlternateMobile() != null) customer.setAlternateMobile(req.getAlternateMobile());
-        if (req.getEmail()           != null) customer.setEmail(req.getEmail());
-        if (req.getAddress()         != null) customer.setAddress(req.getAddress());
-        if (req.getCity()            != null) customer.setCity(req.getCity());
-        if (req.getArea()            != null) customer.setArea(req.getArea());
-        if (req.getPincode()         != null) customer.setPincode(req.getPincode());
-        if (req.getCustomerType()    != null) customer.setCustomerType(req.getCustomerType());
-        if (req.getCustomerStatus()  != null) customer.setCustomerStatus(req.getCustomerStatus());
-        if (req.getIsActive()        != null) customer.setIsActive(req.getIsActive());
-        if (req.getNotes()           != null) customer.setNotes(req.getNotes());
-        if (req.getDateJoined()      != null) customer.setDateJoined(req.getDateJoined());
+        if (req.getName()                != null) customer.setName(req.getName().trim());
+        if (req.getFirmName()            != null) customer.setFirmName(req.getFirmName().trim());
+        if (req.getMobile()              != null) customer.setMobile(req.getMobile().trim());
+        if (req.getAlternateMobile()     != null) customer.setAlternateMobile(req.getAlternateMobile());
+        if (req.getEmail()               != null) customer.setEmail(req.getEmail());
+        if (req.getAddress()             != null) customer.setAddress(req.getAddress());
+        if (req.getAddressLocationLink() != null) customer.setAddressLocationLink(req.getAddressLocationLink());
+        if (req.getRemarks()             != null) customer.setRemarks(req.getRemarks());
+        if (req.getNotes()               != null) customer.setNotes(req.getNotes());
+        if (req.getCustomerStatus()      != null) customer.setCustomerStatus(req.getCustomerStatus());
+        if (req.getIsActive()            != null) customer.setIsActive(req.getIsActive());
+        if (req.getIsRegular()           != null) customer.setIsRegular(req.getIsRegular());
+        if (req.getDateJoined()          != null) customer.setDateJoined(req.getDateJoined());
     }
 }

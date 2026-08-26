@@ -6,6 +6,7 @@ import com.erp.system.dto.request.UpdateOrderBillingRequest;
 import com.erp.system.dto.response.ApiResponse;
 import com.erp.system.dto.response.OrderResponse;
 import com.erp.system.dto.response.PagedResponse;
+import com.erp.system.dto.response.PaymentSummaryDto;
 import com.erp.system.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,8 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -91,6 +94,22 @@ public class OrderController {
     public ResponseEntity<ApiResponse<OrderResponse>> markPaymentDone(@PathVariable Long id) {
         OrderResponse data = orderService.markPaymentDone(id);
         return ResponseEntity.ok(ApiResponse.success("Payment marked as done.", data));
+    }
+
+    @PostMapping("/{id}/payments")
+    public ResponseEntity<ApiResponse<com.erp.system.dto.response.PaymentSummaryDto>> recordPayment(
+            @PathVariable Long id,
+            @Valid @RequestBody com.erp.system.dto.request.RecordPaymentRequest request) {
+        com.erp.system.dto.response.PaymentSummaryDto data = orderService.recordPayment(id, request);
+        return ResponseEntity.ok(ApiResponse.success("Payment recorded successfully.", data));
+    }
+
+    @GetMapping("/{id}/payments")
+    public ResponseEntity<ApiResponse<
+            List<PaymentSummaryDto>>> getOrderPayments(
+            @PathVariable Long id) {
+        List<com.erp.system.dto.response.PaymentSummaryDto> data = orderService.getOrderPayments(id);
+        return ResponseEntity.ok(ApiResponse.success("Payment history retrieved successfully.", data));
     }
 
     @PostMapping("/{id}/mark-returned")
