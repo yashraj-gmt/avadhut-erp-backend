@@ -242,7 +242,7 @@ public class CustomerController {
                 "Regular customer recalculation completed successfully.", result));
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
+    // Helpers
 
     private CustomerFilterRequest buildFilter(String search, CustomerType customerType,
                                               CustomerStatus customerStatus, Boolean isActive,
