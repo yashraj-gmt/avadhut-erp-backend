@@ -22,6 +22,10 @@ public class CustomerSummaryResponse {
     private String         name;
     private String         firmName;
     private String         mobile;
+    private String         telephoneNumber;
+    private String         address;
+    private String         area;
+    private String         city;
     private CustomerStatus customerStatus;
     private Boolean        isActive;
     private Boolean        isRegular;
@@ -32,6 +36,9 @@ public class CustomerSummaryResponse {
 
     /** Total number of times products were booked/ordered */
     private Long  totalBookings;
+
+    /** Total pending amount / outstanding dues across orders */
+    private java.math.BigDecimal pendingAmount;
 
     private LocalDateTime createdAt;
 }

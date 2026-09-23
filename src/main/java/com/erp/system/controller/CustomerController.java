@@ -214,7 +214,7 @@ public class CustomerController {
         return ResponseEntity.ok(ApiResponse.success("Pending payments retrieved successfully.", data));
     }
 
-    // ── GET /api/customers/{id}/history ───────────────────────────────────
+    // ── GET /api/customers/{id}/history  ───────────────────────────────────
 
     @GetMapping("/{id}/history")
     public ResponseEntity<ApiResponse<PagedResponse<CustomerHistoryEntry>>> getHistory(
@@ -227,7 +227,7 @@ public class CustomerController {
         return ResponseEntity.ok(ApiResponse.success("Customer history retrieved successfully.", data));
     }
 
-    // ── POST /api/customers/regular/recalculate ───────────────────────────
+    // ── POST /api/customers/regular/recalculate
 
     /**
      * On-demand trigger for the regular-customer algorithm.

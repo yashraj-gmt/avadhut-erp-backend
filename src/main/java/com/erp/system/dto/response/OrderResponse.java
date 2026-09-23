@@ -20,7 +20,8 @@ public class OrderResponse {
     private String contactNumber;
     private String alternateMobile;
     
-    private String operatorName;
+    private List<String> operators; // list of operator names
+    private String operatorName;    // comma-separated, kept for backward-compat
     private String operatorMobile;
     
     private Boolean cableRequired;

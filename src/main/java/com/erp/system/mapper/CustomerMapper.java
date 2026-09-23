@@ -24,6 +24,10 @@ public class CustomerMapper {
                 .name(c.getName())
                 .firmName(c.getFirmName())
                 .mobile(c.getMobile())
+                .telephoneNumber(c.getTelephoneNumber())
+                .address(c.getAddress())
+                .area(c.getArea())
+                .city(c.getCity())
                 .customerStatus(c.getCustomerStatus())
                 .isActive(c.getIsActive())
                 .isRegular(c.getIsRegular())
@@ -43,6 +47,7 @@ public class CustomerMapper {
                 .firmName(c.getFirmName())
                 .mobile(c.getMobile())
                 .alternateMobile(c.getAlternateMobile())
+                .telephoneNumber(c.getTelephoneNumber())
                 .email(c.getEmail())
                 .address(c.getAddress())
                 .addressLocationLink(c.getAddressLocationLink())
@@ -69,6 +74,7 @@ public class CustomerMapper {
                 .firmName(c.getFirmName())
                 .mobile(c.getMobile())
                 .alternateMobile(c.getAlternateMobile())
+                .telephoneNumber(c.getTelephoneNumber())
                 .email(c.getEmail())
                 .address(c.getAddress())
                 .addressLocationLink(c.getAddressLocationLink())
@@ -172,6 +178,7 @@ public class CustomerMapper {
         if (req.getFirmName()            != null) customer.setFirmName(req.getFirmName().trim());
         if (req.getMobile()              != null) customer.setMobile(req.getMobile().trim());
         if (req.getAlternateMobile()     != null) customer.setAlternateMobile(req.getAlternateMobile());
+        if (req.getTelephoneNumber()     != null) customer.setTelephoneNumber(req.getTelephoneNumber().trim());
         if (req.getEmail()               != null) customer.setEmail(req.getEmail());
         if (req.getAddress()             != null) customer.setAddress(req.getAddress());
         if (req.getAddressLocationLink() != null) customer.setAddressLocationLink(req.getAddressLocationLink());

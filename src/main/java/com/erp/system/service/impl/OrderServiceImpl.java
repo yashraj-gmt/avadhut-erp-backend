@@ -34,6 +34,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.Year;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,9 +65,9 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order();
         order.setOrderNumber(generateOrderNumber());
         order.setCustomer(customer);
-        
+
         mapRequestToEntity(request, order);
-        
+
         order = orderRepository.save(order);
         return toDto(order);
     }
@@ -171,6 +172,7 @@ public class OrderServiceImpl implements OrderService {
         // map request
         CreateOrderRequest tempRequest = new CreateOrderRequest();
         tempRequest.setAlternateMobile(request.getAlternateMobile());
+        tempRequest.setOperators(request.getOperators());
         tempRequest.setOperatorName(request.getOperatorName());
         tempRequest.setOperatorMobile(request.getOperatorMobile());
         tempRequest.setCableRequired(request.getCableRequired());
@@ -213,7 +215,19 @@ public class OrderServiceImpl implements OrderService {
 
     private void mapRequestToEntity(CreateOrderRequest request, Order order) {
         order.setAlternateMobile(request.getAlternateMobile());
-        order.setOperatorName(request.getOperatorName());
+        // Resolve operators: prefer new List<String>, fall back to legacy operatorName string
+        String resolvedOperatorName;
+        if (request.getOperators() != null && !request.getOperators().isEmpty()) {
+            resolvedOperatorName = request.getOperators().stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.joining(", "));
+        } else if (request.getOperatorName() != null && !request.getOperatorName().isBlank()) {
+            resolvedOperatorName = request.getOperatorName().trim();
+        } else {
+            resolvedOperatorName = null;
+        }
+        order.setOperatorName(resolvedOperatorName);
         order.setOperatorMobile(request.getOperatorMobile());
         order.setCableRequired(request.getCableRequired());
         order.setWithDiesel(request.getDieselType() != null && request.getDieselType().equals("WITH_OWNER"));
@@ -438,6 +452,12 @@ public class OrderServiceImpl implements OrderService {
                 .contactNumber(o.getCustomer() != null ? o.getCustomer().getMobile() : null)
                 .alternateMobile(o.getAlternateMobile())
                 .operatorName(o.getOperatorName())
+                .operators(o.getOperatorName() != null && !o.getOperatorName().isBlank()
+                        ? java.util.Arrays.stream(o.getOperatorName().split(","))
+                                .map(String::trim)
+                                .filter(s -> !s.isEmpty())
+                                .collect(Collectors.toList())
+                        : new ArrayList<>())
                 .operatorMobile(o.getOperatorMobile())
                 .cableRequired(o.getCableRequired())
                 .dieselType(Boolean.TRUE.equals(o.getWithDiesel()) ? "WITH_OWNER" : "PARTY")

@@ -15,6 +15,7 @@ import java.util.List;
     indexes = {
         @Index(name = "idx_customers_name",       columnList = "name"),
         @Index(name = "idx_customers_mobile",     columnList = "mobile"),
+        @Index(name = "idx_customers_telephone",  columnList = "telephone_number"),
         @Index(name = "idx_customers_active",     columnList = "is_active"),
         @Index(name = "idx_customers_regular",    columnList = "is_regular"),
         @Index(name = "idx_customers_status",     columnList = "customer_status"),
@@ -41,6 +42,10 @@ public class Customer extends BaseEntity {
 
     @Column(name = "alternate_mobile", length = 15)
     private String alternateMobile;
+
+    /** Landline / telephone number (optional) */
+    @Column(name = "telephone_number", length = 20)
+    private String telephoneNumber;
 
     @Column(name = "email", length = 100)
     private String email;

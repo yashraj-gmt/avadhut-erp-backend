@@ -18,8 +18,9 @@ public class UpdateOrderRequest {
     
     private String alternateMobile;
     
-    @NotBlank
-    private String operatorName;
+    private List<String> operators;
+    
+    private String operatorName; // kept for backward-compat
     
     private String operatorMobile;
     

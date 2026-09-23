@@ -44,13 +44,42 @@ public final class CustomerSpecification {
                 return cb.and(predicates.toArray(new Predicate[0]));
             }
 
-            // Keyword search: name OR mobile OR area (case-insensitive LIKE)
+            // Universal keyword search: name OR firmName OR mobile OR alternateMobile OR telephoneNumber OR address OR area OR city (case-insensitive LIKE)
             if (filter.getSearch() != null && !filter.getSearch().isBlank()) {
                 String pattern = "%" + filter.getSearch().toLowerCase().trim() + "%";
-                Predicate nameLike   = cb.like(cb.lower(root.get("name")),   pattern);
-                Predicate mobileLike = cb.like(cb.lower(root.get("mobile")), pattern);
-                Predicate areaLike   = cb.like(cb.lower(root.get("area")),   pattern);
-                predicates.add(cb.or(nameLike, mobileLike, areaLike));
+                Predicate nameLike        = cb.like(cb.lower(root.get("name")),            pattern);
+                Predicate firmNameLike    = cb.like(cb.lower(root.get("firmName")),        pattern);
+                Predicate mobileLike      = cb.like(cb.lower(root.get("mobile")),          pattern);
+                Predicate altMobileLike   = cb.like(cb.lower(root.get("alternateMobile")),  pattern);
+                Predicate telephoneLike   = cb.like(cb.lower(root.get("telephoneNumber")), pattern);
+                Predicate addressLike     = cb.like(cb.lower(root.get("address")),          pattern);
+                Predicate areaLike        = cb.like(cb.lower(root.get("area")),             pattern);
+                Predicate cityLike        = cb.like(cb.lower(root.get("city")),             pattern);
+                predicates.add(cb.or(nameLike, firmNameLike, mobileLike, altMobileLike, telephoneLike, addressLike, areaLike, cityLike));
+            }
+
+            // Dedicated filter by firm name
+            if (filter.getFirmName() != null && !filter.getFirmName().isBlank()) {
+                String pattern = "%" + filter.getFirmName().toLowerCase().trim() + "%";
+                predicates.add(cb.like(cb.lower(root.get("firmName")), pattern));
+            }
+
+            // Dedicated filter by mobile / telephone
+            if (filter.getMobile() != null && !filter.getMobile().isBlank()) {
+                String pattern = "%" + filter.getMobile().toLowerCase().trim() + "%";
+                Predicate mobileLike    = cb.like(cb.lower(root.get("mobile")),          pattern);
+                Predicate altMobileLike = cb.like(cb.lower(root.get("alternateMobile")),  pattern);
+                Predicate telephoneLike = cb.like(cb.lower(root.get("telephoneNumber")), pattern);
+                predicates.add(cb.or(mobileLike, altMobileLike, telephoneLike));
+            }
+
+            // Dedicated filter by location (address, area, city)
+            if (filter.getLocation() != null && !filter.getLocation().isBlank()) {
+                String pattern = "%" + filter.getLocation().toLowerCase().trim() + "%";
+                Predicate addressLike = cb.like(cb.lower(root.get("address")), pattern);
+                Predicate areaLike    = cb.like(cb.lower(root.get("area")),    pattern);
+                Predicate cityLike    = cb.like(cb.lower(root.get("city")),    pattern);
+                predicates.add(cb.or(addressLike, areaLike, cityLike));
             }
 
             // CustomerType filter
@@ -115,9 +144,14 @@ public final class CustomerSpecification {
         if (search == null || search.isBlank()) return null;
         String pattern = "%" + search.toLowerCase().trim() + "%";
         return (root, q, cb) -> cb.or(
-                cb.like(cb.lower(root.get("name")),   pattern),
-                cb.like(cb.lower(root.get("mobile")), pattern),
-                cb.like(cb.lower(root.get("area")),   pattern)
+                cb.like(cb.lower(root.get("name")),            pattern),
+                cb.like(cb.lower(root.get("firmName")),        pattern),
+                cb.like(cb.lower(root.get("mobile")),          pattern),
+                cb.like(cb.lower(root.get("alternateMobile")),  pattern),
+                cb.like(cb.lower(root.get("telephoneNumber")), pattern),
+                cb.like(cb.lower(root.get("address")),          pattern),
+                cb.like(cb.lower(root.get("area")),             pattern),
+                cb.like(cb.lower(root.get("city")),             pattern)
         );
     }
 

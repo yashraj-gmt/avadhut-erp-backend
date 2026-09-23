@@ -420,6 +420,7 @@ public class GeneratorCustomerServiceImpl implements CustomerService {
         if (req.getFirmName()            != null) customer.setFirmName(req.getFirmName().trim());
         customer.setMobile(req.getMobile().trim());
         customer.setAlternateMobile(req.getAlternateMobile());
+        if (req.getTelephoneNumber()     != null) customer.setTelephoneNumber(req.getTelephoneNumber().trim());
         customer.setEmail(req.getEmail());
         customer.setAddress(req.getAddress());
         customer.setAddressLocationLink(req.getAddressLocationLink());
@@ -454,12 +455,18 @@ public class GeneratorCustomerServiceImpl implements CustomerService {
         return response;
     }
 
-    /** Maps Customer → CustomerSummaryResponse and enriches with order counts. */
+    /** Maps Customer → CustomerSummaryResponse and enriches with order counts and pending amount. */
     private CustomerSummaryResponse toSummaryWithCounts(Customer customer) {
         CustomerSummaryResponse summary = customerMapper.toSummaryResponse(customer);
         long total = orderRepository.countByCustomerIdAndDeletedFalse(customer.getId());
         summary.setTotalOrders(total);
         summary.setTotalBookings(total); // bookings = orders in this domain
+
+        BigDecimal totalBusinessValue = orderRepository.sumFinalAmountByCustomerId(customer.getId());
+        BigDecimal totalPaidAmount    = orderRepository.sumPaidAmountByCustomerId(customer.getId());
+        BigDecimal outstanding        = totalBusinessValue.subtract(totalPaidAmount);
+        summary.setPendingAmount(outstanding.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : outstanding);
+
         return summary;
     }
 

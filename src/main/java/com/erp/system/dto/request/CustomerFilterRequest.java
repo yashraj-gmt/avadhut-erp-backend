@@ -17,8 +17,17 @@ import java.time.LocalDate;
 @Builder
 public class CustomerFilterRequest {
 
-    /** Searches across name, mobile, and area (case-insensitive LIKE). */
+    /** Searches across name, firmName, mobile/alternate/telephone, and location (address/area/city) */
     private String search;
+
+    /** Filter specifically by firm/company name */
+    private String firmName;
+
+    /** Filter specifically by mobile/telephone number */
+    private String mobile;
+
+    /** Filter specifically by location (address, area, city) */
+    private String location;
 
     private CustomerType customerType;
 

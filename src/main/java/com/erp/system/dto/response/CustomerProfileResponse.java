@@ -27,6 +27,7 @@ public class CustomerProfileResponse {
     private String         firmName;
     private String         mobile;
     private String         alternateMobile;
+    private String         telephoneNumber;
     private String         email;
     private String         address;
     private String         addressLocationLink;

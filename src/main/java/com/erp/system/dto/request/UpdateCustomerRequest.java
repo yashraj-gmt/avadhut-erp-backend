@@ -28,6 +28,10 @@ public class UpdateCustomerRequest {
     @Pattern(regexp = "^[6-9]\\d{9}$", message = "Alternate mobile must be a valid 10-digit Indian number.")
     private String alternateMobile;
 
+    @Pattern(regexp = "^$|^[0-9+\\-\\s()]{6,20}$", message = "Telephone number must be a valid number (6-20 characters).")
+    @Size(max = 20, message = "Telephone number must not exceed 20 characters.")
+    private String telephoneNumber;
+
     @Email(message = "Email must be a valid address.")
     @Size(max = 100, message = "Email must not exceed 100 characters.")
     private String email;

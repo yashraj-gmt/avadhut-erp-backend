@@ -98,7 +98,7 @@ public class Order extends BaseEntity {
     private String operatorMobile;
 
     /** Name of the assigned operator */
-    @Column(name = "operator_name", length = 150)
+    @Column(name = "operator_name", columnDefinition = "TEXT")
     private String operatorName;
 
     /** Whether cable is required for this order */
